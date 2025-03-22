@@ -9,8 +9,8 @@ export default function JobApplication() {
   const jobId = searchParams.get('jobId');
 
   return (
-    <AppShell>
-      <ApplicationForm />
+    <AppShell showSidebar={false}>
+      <ApplicationForm jobId={jobId} />
     </AppShell>
   );
 }

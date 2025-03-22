@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
@@ -6,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Briefcase, MapPin, Clock, Calendar, ChevronRight, Search, ArrowRight, Lock } from 'lucide-react';
+import { Briefcase, MapPin, Clock, Calendar, ChevronRight, Search, ArrowRight } from 'lucide-react';
 
+// Mock data - will be replaced with data from backend
 // This would typically come from an API
 const jobListings = [
   {
@@ -79,7 +79,7 @@ export default function Index() {
   );
 
   return (
-    <AppShell>
+    <AppShell showSidebar={false}>
       <div className="container mx-auto py-8">
         <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-xl p-8 mb-8 text-white">
           <div className="max-w-3xl mx-auto text-center">
@@ -96,16 +96,6 @@ export default function Index() {
               />
             </div>
           </div>
-        </div>
-
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">Latest Job Openings</h2>
-          <Link to="/admin-login">
-            <Button variant="outline" size="sm" className="flex items-center gap-2">
-              <Lock className="h-4 w-4" />
-              Admin Login
-            </Button>
-          </Link>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

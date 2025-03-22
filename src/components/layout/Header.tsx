@@ -1,51 +1,51 @@
 
 import React from 'react';
-import { Bell, Search, Plus, Settings, Moon, Sun } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Search, Bell, User, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-export function Header() {
-  const [theme, setTheme] = React.useState<'light' | 'dark'>('light');
+interface HeaderProps {
+  showAdminLogin?: boolean;
+}
 
-  const toggleTheme = () => {
-    setTheme(theme === 'light' ? 'dark' : 'light');
-    // Add actual theme toggling logic here
-  };
-
+export function Header({ showAdminLogin = false }: HeaderProps) {
   return (
-    <header className="bg-white border-b border-gray-200 py-3 px-4 sm:px-6 flex items-center justify-between">
-      <h1 className="text-xl font-semibold text-gray-800">Dashboard</h1>
-
-      <div className="flex items-center space-x-2 sm:space-x-4">
-        <div className="relative hidden sm:block">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-4 w-4 text-gray-400" />
-          </div>
-          <input
-            type="text"
-            placeholder="Search..."
-            className="py-2 pl-10 pr-4 block w-full sm:w-64 rounded-md border-0 bg-gray-50 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm"
-          />
+    <header className="bg-white border-b border-gray-200 shadow-sm">
+      <div className="px-4 sm:px-6 py-3 flex items-center justify-between">
+        <div className="flex items-center">
+          <Link to="/" className="text-xl font-bold text-blue-600 flex items-center">
+            <div className="bg-blue-600 rounded-full p-1 mr-2">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 5C13.66 5 15 6.34 15 8C15 9.66 13.66 11 12 11C10.34 11 9 9.66 9 8C9 6.34 10.34 5 12 5ZM12 19.2C9.5 19.2 7.29 17.92 6 15.98C6.03 13.99 10 12.9 12 12.9C13.99 12.9 17.97 13.99 18 15.98C16.71 17.92 14.5 19.2 12 19.2Z" fill="white"/>
+              </svg>
+            </div>
+            TalentATS
+          </Link>
         </div>
-
-        <Button variant="ghost" size="icon" className="text-gray-500 hover:text-gray-700 hidden sm:flex">
-          <span className="sr-only">Toggle theme</span>
-          {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
-        </Button>
-
-        <Button variant="ghost" size="icon" className="text-gray-500 hover:text-gray-700 relative">
-          <span className="sr-only">Notifications</span>
-          <Bell className="h-5 w-5" />
-          <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white" />
-        </Button>
-
-        <Button variant="default" size="sm" className="hidden sm:flex items-center gap-1">
-          <Plus className="h-4 w-4" />
-          <span>Add New</span>
-        </Button>
-
-        <Button variant="ghost" size="icon" className="sm:hidden text-gray-500 hover:text-gray-700">
-          <Plus className="h-5 w-5" />
-        </Button>
+        
+        <div className="flex items-center space-x-4">
+          {showAdminLogin ? (
+            <Link to="/admin-login">
+              <Button variant="outline" size="sm" className="flex items-center gap-2">
+                <Lock className="h-4 w-4" />
+                Admin Login
+              </Button>
+            </Link>
+          ) : (
+            <>
+              <button className="text-gray-500 hover:text-gray-700">
+                <Search className="h-5 w-5" />
+              </button>
+              <button className="text-gray-500 hover:text-gray-700 relative">
+                <Bell className="h-5 w-5" />
+                <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
+              </button>
+              <button className="text-gray-500 hover:text-gray-700">
+                <User className="h-5 w-5" />
+              </button>
+            </>
+          )}
+        </div>
       </div>
     </header>
   );

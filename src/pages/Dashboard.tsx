@@ -1,22 +1,18 @@
+
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { VacancyChart } from '@/components/dashboard/VacancyChart';
 import { SkillsChart } from '@/components/dashboard/SkillsChart';
-import { FileText, Users, Calendar, MessageSquare, Plus, Search, Filter, Download, Briefcase } from 'lucide-react';
+import { FileText, Users, Calendar, Briefcase, Plus } from 'lucide-react';
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('overview');
-  const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
-  const [experienceFilter, setExperienceFilter] = useState('');
-  const [educationFilter, setEducationFilter] = useState('');
 
   // Dummy data for the charts
   const vacancyData = [
@@ -39,127 +35,20 @@ export default function Dashboard() {
     { name: 'Python', value: 75, color: '#F59E0B' },
   ];
 
-  // Sample job listings for admin management
-  const jobListings = [
-    {
-      id: 1,
-      title: 'Senior Software Engineer',
-      department: 'Engineering',
-      locations: 'New York, NY',
-      status: 'Active',
-      applicants: 45,
-      datePosted: '2023-06-15',
-      closingDate: '2023-07-15',
-    },
-    {
-      id: 2,
-      title: 'UI/UX Designer',
-      department: 'Design',
-      locations: 'Remote',
-      status: 'Active',
-      applicants: 32,
-      datePosted: '2023-06-20',
-      closingDate: '2023-07-20',
-    },
-    {
-      id: 3,
-      title: 'Data Scientist',
-      department: 'Data',
-      locations: 'San Francisco, CA',
-      status: 'Active',
-      applicants: 28,
-      datePosted: '2023-06-18',
-      closingDate: '2023-07-18',
-    },
-    {
-      id: 4,
-      title: 'Product Manager',
-      department: 'Product',
-      locations: 'Chicago, IL',
-      status: 'Active',
-      applicants: 36,
-      datePosted: '2023-06-22',
-      closingDate: '2023-07-22',
-    },
-  ];
-
-  // Sample applications for shortlisting
-  const applications = [
-    {
-      id: 101,
-      name: 'John Smith',
-      jobApplied: 'Senior Software Engineer',
-      dateApplied: '2023-06-18',
-      experience: '7 years',
-      education: "Master's Degree",
-      skills: ['JavaScript', 'React', 'Node.js', 'AWS'],
-      status: 'Under Review',
-    },
-    {
-      id: 102,
-      name: 'Maria Garcia',
-      jobApplied: 'Senior Software Engineer',
-      dateApplied: '2023-06-19',
-      experience: '5 years',
-      education: "Bachelor's Degree",
-      skills: ['JavaScript', 'Angular', 'Java', 'Docker'],
-      status: 'Shortlisted',
-    },
-    {
-      id: 103,
-      name: 'Robert Johnson',
-      jobApplied: 'UI/UX Designer',
-      dateApplied: '2023-06-22',
-      experience: '3 years',
-      education: "Bachelor's Degree",
-      skills: ['Figma', 'Adobe XD', 'UI Design', 'Prototyping'],
-      status: 'Under Review',
-    },
-    {
-      id: 104,
-      name: 'Sarah Williams',
-      jobApplied: 'Data Scientist',
-      dateApplied: '2023-06-20',
-      experience: '6 years',
-      education: 'PhD',
-      skills: ['Python', 'TensorFlow', 'SQL', 'Data Visualization'],
-      status: 'Shortlisted',
-    },
-    {
-      id: 105,
-      name: 'David Lee',
-      jobApplied: 'Product Manager',
-      dateApplied: '2023-06-25',
-      experience: '4 years',
-      education: "Master's Degree",
-      skills: ['Product Strategy', 'Agile', 'Market Research'],
-      status: 'Under Review',
-    },
-  ];
-
-  // Filter applications based on selected criteria
-  const filteredApplications = applications.filter(app => {
-    if (selectedSkills.length > 0 && !selectedSkills.some(skill => app.skills.includes(skill))) {
-      return false;
-    }
-    if (experienceFilter && !app.experience.toLowerCase().includes(experienceFilter.toLowerCase())) {
-      return false;
-    }
-    if (educationFilter && !app.education.toLowerCase().includes(educationFilter.toLowerCase())) {
-      return false;
-    }
-    return true;
-  });
-
-  const allSkills = Array.from(new Set(applications.flatMap(app => app.skills)));
+  // Get jobs from localStorage
+  const jobs = JSON.parse(localStorage.getItem('talent_ats_jobs') || '[]');
 
   return (
     <AppShell>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="mb-6">
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="jobs">Jobs</TabsTrigger>
-          <TabsTrigger value="candidates">Candidates</TabsTrigger>
+          <TabsTrigger value="jobs">
+            <Link to="/jobs" className="flex items-center">Jobs</Link>
+          </TabsTrigger>
+          <TabsTrigger value="candidates">
+            <Link to="/applications" className="flex items-center">Candidates</Link>
+          </TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
         </TabsList>
         
@@ -167,7 +56,7 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <StatCard
               title="Total Jobs"
-              value="12"
+              value={jobs.length.toString()}
               change="+2"
               trend="up"
               icon={<Briefcase className="h-4 w-4" />}
@@ -197,8 +86,14 @@ export default function Dashboard() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Card className="lg:col-span-2">
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Application Statistics</CardTitle>
+                <Link to="/jobs">
+                  <Button variant="outline" size="sm" className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    Add New Job
+                  </Button>
+                </Link>
               </CardHeader>
               <CardContent>
                 <VacancyChart data={vacancyData} />
@@ -214,217 +109,60 @@ export default function Dashboard() {
               </CardContent>
             </Card>
           </div>
-        </TabsContent>
-        
-        <TabsContent value="jobs" className="space-y-6">
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h2 className="text-2xl font-bold">Job Listings</h2>
-              <p className="text-gray-600">Manage job postings and vacancies</p>
-            </div>
-            <Button className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Add New Job
-            </Button>
-          </div>
-          
+
           <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Job Title</TableHead>
-                    <TableHead>Department</TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Applicants</TableHead>
-                    <TableHead>Posted Date</TableHead>
-                    <TableHead>Closing Date</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {jobListings.map((job) => (
-                    <TableRow key={job.id}>
-                      <TableCell className="font-medium">{job.title}</TableCell>
-                      <TableCell>{job.department}</TableCell>
-                      <TableCell>{job.locations}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                          {job.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{job.applicants}</TableCell>
-                      <TableCell>{new Date(job.datePosted).toLocaleDateString()}</TableCell>
-                      <TableCell>{new Date(job.closingDate).toLocaleDateString()}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button variant="ghost" size="sm">Edit</Button>
-                          <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700 hover:bg-red-50">
-                            Delete
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="candidates" className="space-y-6">
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h2 className="text-2xl font-bold">Candidate Management</h2>
-              <p className="text-gray-600">Review and shortlist candidates</p>
-            </div>
-            <div className="flex gap-4">
-              <Button variant="outline" className="flex items-center gap-2">
-                <Filter className="h-4 w-4" />
-                Filters
-              </Button>
-              <Button variant="outline" className="flex items-center gap-2">
-                <Download className="h-4 w-4" />
-                Export
-              </Button>
-            </div>
-          </div>
-          
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>Filter Candidates</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Recent Jobs</CardTitle>
+              <Link to="/jobs">
+                <Button variant="link" size="sm">
+                  View All
+                </Button>
+              </Link>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-700 mb-1 block">Skills</label>
-                  <Select onValueChange={(value) => setSelectedSkills([...selectedSkills, value])}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select skills" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {allSkills.map((skill, index) => (
-                        <SelectItem key={index} value={skill}>{skill}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {selectedSkills.map((skill, index) => (
-                      <Badge key={index} variant="secondary" className="bg-gray-100 flex items-center gap-1">
-                        {skill}
-                        <button 
-                          onClick={() => setSelectedSkills(selectedSkills.filter(s => s !== skill))}
-                          className="text-gray-500 hover:text-gray-700"
-                        >
-                          ×
-                        </button>
+              <div className="space-y-4">
+                {jobs.slice(0, 3).map((job) => (
+                  <div key={job.id} className="flex justify-between items-center p-3 rounded-lg border">
+                    <div>
+                      <div className="font-medium">{job.title}</div>
+                      <div className="text-sm text-gray-500">{job.company}</div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                        Active
                       </Badge>
-                    ))}
+                      <Link to="/jobs">
+                        <Button variant="ghost" size="sm">
+                          Edit
+                        </Button>
+                      </Link>
+                    </div>
                   </div>
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium text-gray-700 mb-1 block">Experience</label>
-                  <Select onValueChange={setExperienceFilter}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select experience" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">1+ years</SelectItem>
-                      <SelectItem value="3">3+ years</SelectItem>
-                      <SelectItem value="5">5+ years</SelectItem>
-                      <SelectItem value="7">7+ years</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium text-gray-700 mb-1 block">Education Level</label>
-                  <Select onValueChange={setEducationFilter}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select education" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="bachelor">Bachelor's Degree</SelectItem>
-                      <SelectItem value="master">Master's Degree</SelectItem>
-                      <SelectItem value="phd">PhD</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                ))}
+                {jobs.length === 0 && (
+                  <div className="text-center py-4 text-gray-500">
+                    No jobs found. Add your first job posting!
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
-          
-          <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Job</TableHead>
-                    <TableHead>Applied Date</TableHead>
-                    <TableHead>Experience</TableHead>
-                    <TableHead>Education</TableHead>
-                    <TableHead>Skills</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredApplications.map((candidate) => (
-                    <TableRow key={candidate.id}>
-                      <TableCell className="font-medium">{candidate.name}</TableCell>
-                      <TableCell>{candidate.jobApplied}</TableCell>
-                      <TableCell>{new Date(candidate.dateApplied).toLocaleDateString()}</TableCell>
-                      <TableCell>{candidate.experience}</TableCell>
-                      <TableCell>{candidate.education}</TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {candidate.skills.slice(0, 2).map((skill, index) => (
-                            <Badge key={index} variant="outline" className="text-xs">
-                              {skill}
-                            </Badge>
-                          ))}
-                          {candidate.skills.length > 2 && (
-                            <Badge variant="outline" className="text-xs">
-                              +{candidate.skills.length - 2}
-                            </Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant="outline" 
-                          className={candidate.status === 'Shortlisted' 
-                            ? 'bg-green-50 text-green-700 border-green-200' 
-                            : 'bg-yellow-50 text-yellow-700 border-yellow-200'
-                          }
-                        >
-                          {candidate.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm">View</Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            className={candidate.status !== 'Shortlisted' 
-                              ? 'text-green-600 hover:text-green-800 hover:bg-green-50' 
-                              : 'text-yellow-600 hover:text-yellow-800 hover:bg-yellow-50'
-                            }
-                          >
-                            {candidate.status !== 'Shortlisted' ? 'Shortlist' : 'Review'}
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+        </TabsContent>
+        
+        <TabsContent value="jobs">
+          <div className="py-10 text-center">
+            <Link to="/jobs">
+              <Button>Go to Jobs Management</Button>
+            </Link>
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="candidates">
+          <div className="py-10 text-center">
+            <Link to="/applications">
+              <Button>Go to Candidates Management</Button>
+            </Link>
+          </div>
         </TabsContent>
         
         <TabsContent value="reports" className="space-y-6">
@@ -433,10 +171,6 @@ export default function Dashboard() {
               <h2 className="text-2xl font-bold">Reports</h2>
               <p className="text-gray-600">Generate and view recruitment reports</p>
             </div>
-            <Button variant="outline" className="flex items-center gap-2">
-              <Download className="h-4 w-4" />
-              Export Reports
-            </Button>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -445,38 +179,26 @@ export default function Dashboard() {
                 <CardTitle>Job Performance</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Senior Software Engineer</span>
-                    <span>45 applicants</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-blue-600 h-2 rounded-full" style={{ width: '75%' }}></div>
-                  </div>
-                  
-                  <div className="flex justify-between text-sm">
-                    <span>UI/UX Designer</span>
-                    <span>32 applicants</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-blue-600 h-2 rounded-full" style={{ width: '60%' }}></div>
-                  </div>
-                  
-                  <div className="flex justify-between text-sm">
-                    <span>Data Scientist</span>
-                    <span>28 applicants</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-blue-600 h-2 rounded-full" style={{ width: '50%' }}></div>
-                  </div>
-                  
-                  <div className="flex justify-between text-sm">
-                    <span>Product Manager</span>
-                    <span>36 applicants</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-blue-600 h-2 rounded-full" style={{ width: '65%' }}></div>
-                  </div>
+                <div className="space-y-4">
+                  {jobs.map((job) => (
+                    <div key={job.id} className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span>{job.title}</span>
+                        <span>{Math.floor(Math.random() * 50) + 10} applicants</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-blue-600 h-2 rounded-full" 
+                          style={{ width: `${Math.floor(Math.random() * 75) + 25}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  ))}
+                  {jobs.length === 0 && (
+                    <div className="text-center py-4 text-gray-500">
+                      No jobs data available for reporting.
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
