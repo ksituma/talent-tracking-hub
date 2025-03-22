@@ -1,78 +1,29 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Briefcase, MapPin, Clock, Calendar, ChevronRight, Search, ArrowRight } from 'lucide-react';
+import { Briefcase, MapPin, Clock, Calendar, ChevronRight, Search, ArrowRight, GraduationCap, Clock1 } from 'lucide-react';
 
-// Mock data - will be replaced with data from backend
-// This would typically come from an API
-const jobListings = [
-  {
-    id: 1,
-    title: 'Senior Software Engineer',
-    company: 'Tech Innovations Inc.',
-    location: 'New York, NY',
-    type: 'Full-time',
-    salary: '$120,000 - $150,000',
-    postedDate: '2023-06-15',
-    closingDate: '2023-07-15',
-    description: 'Looking for a senior software engineer with expertise in React, Node.js, and cloud technologies.',
-    requirements: ['5+ years of experience', 'React', 'Node.js', 'AWS', 'CI/CD'],
-    skills: ['JavaScript', 'TypeScript', 'React', 'Node.js', 'AWS'],
-    featured: true,
-    logo: '/lovable-uploads/c527b9f6-c10f-40f4-b84c-67261743d4c4.png'
-  },
-  {
-    id: 2,
-    title: 'UI/UX Designer',
-    company: 'Creative Solutions',
-    location: 'Remote',
-    type: 'Contract',
-    salary: '$80,000 - $100,000',
-    postedDate: '2023-06-20',
-    closingDate: '2023-07-20',
-    description: 'Seeking a talented UI/UX designer to create beautiful, intuitive interfaces for our products.',
-    requirements: ['3+ years of experience', 'Figma', 'Adobe XD', 'User Research'],
-    skills: ['UI Design', 'UX Research', 'Figma', 'Adobe XD', 'Prototyping'],
-    featured: false
-  },
-  {
-    id: 3,
-    title: 'Data Scientist',
-    company: 'Analytics Pro',
-    location: 'San Francisco, CA',
-    type: 'Full-time',
-    salary: '$130,000 - $160,000',
-    postedDate: '2023-06-18',
-    closingDate: '2023-07-18',
-    description: 'Join our data science team to build machine learning models and analyze large datasets.',
-    requirements: ['Masters/PhD in relevant field', 'Python', 'Machine Learning', 'SQL'],
-    skills: ['Python', 'TensorFlow', 'SQL', 'Data Visualization', 'Machine Learning'],
-    featured: false
-  },
-  {
-    id: 4,
-    title: 'Product Manager',
-    company: 'Product Visionaries',
-    location: 'Chicago, IL',
-    type: 'Full-time',
-    salary: '$110,000 - $140,000',
-    postedDate: '2023-06-22',
-    closingDate: '2023-07-22',
-    description: 'Lead product development initiatives from conception to launch.',
-    requirements: ['4+ years in product management', 'Agile methodologies', 'Technical background'],
-    skills: ['Product Strategy', 'User Stories', 'Roadmapping', 'Agile', 'Market Research'],
-    featured: true
-  },
-];
+// Local storage key for managing jobs
+const JOBS_STORAGE_KEY = 'talent_ats_jobs';
 
 export default function Index() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [jobs, setJobs] = useState([]);
   
-  const filteredJobs = jobListings.filter(job => 
+  // Load jobs from localStorage
+  useEffect(() => {
+    const savedJobs = localStorage.getItem(JOBS_STORAGE_KEY);
+    if (savedJobs) {
+      setJobs(JSON.parse(savedJobs));
+    }
+  }, []);
+  
+  const filteredJobs = jobs.filter(job => 
     job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     job.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
     job.description.toLowerCase().includes(searchTerm.toLowerCase())
@@ -134,6 +85,16 @@ export default function Index() {
                     <div className="flex items-center">
                       <Briefcase className="h-4 w-4 mr-2 text-gray-500" />
                       <span>{job.salary}</span>
+                    </div>
+                    <div className="flex flex-wrap gap-x-4 gap-y-2">
+                      <div className="flex items-center">
+                        <Clock1 className="h-4 w-4 mr-2 text-gray-500" />
+                        <span>{job.yearsOfExperience}+ years experience</span>
+                      </div>
+                      <div className="flex items-center">
+                        <GraduationCap className="h-4 w-4 mr-2 text-gray-500" />
+                        <span>{job.minQualification}</span>
+                      </div>
                     </div>
                     <div className="flex justify-between">
                       <div className="flex items-center">

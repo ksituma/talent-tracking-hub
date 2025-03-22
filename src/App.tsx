@@ -8,6 +8,9 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Applications from "./pages/Applications";
 import Jobs from "./pages/Jobs";
+import Candidates from "./pages/Candidates";
+import Statistics from "./pages/Statistics";
+import Settings from "./pages/Settings";
 import JobApplication from "./pages/JobApplication";
 import NotFound from "./pages/NotFound";
 import AdminLogin from "./pages/AdminLogin";
@@ -41,7 +44,9 @@ const App = () => {
         requirements: ['5+ years of experience', 'React', 'Node.js', 'AWS', 'CI/CD'],
         skills: ['JavaScript', 'TypeScript', 'React', 'Node.js', 'AWS'],
         featured: true,
-        logo: '/lovable-uploads/c527b9f6-c10f-40f4-b84c-67261743d4c4.png'
+        logo: '/lovable-uploads/c527b9f6-c10f-40f4-b84c-67261743d4c4.png',
+        yearsOfExperience: 5,
+        minQualification: 'Bachelor\'s Degree'
       },
       {
         id: 2,
@@ -55,7 +60,9 @@ const App = () => {
         description: 'Seeking a talented UI/UX designer to create beautiful, intuitive interfaces for our products.',
         requirements: ['3+ years of experience', 'Figma', 'Adobe XD', 'User Research'],
         skills: ['UI Design', 'UX Research', 'Figma', 'Adobe XD', 'Prototyping'],
-        featured: false
+        featured: false,
+        yearsOfExperience: 3,
+        minQualification: 'Bachelor\'s Degree'
       },
       {
         id: 3,
@@ -69,7 +76,9 @@ const App = () => {
         description: 'Join our data science team to build machine learning models and analyze large datasets.',
         requirements: ['Masters/PhD in relevant field', 'Python', 'Machine Learning', 'SQL'],
         skills: ['Python', 'TensorFlow', 'SQL', 'Data Visualization', 'Machine Learning'],
-        featured: false
+        featured: false,
+        yearsOfExperience: 4,
+        minQualification: 'Master\'s Degree'
       },
       {
         id: 4,
@@ -83,7 +92,9 @@ const App = () => {
         description: 'Lead product development initiatives from conception to launch.',
         requirements: ['4+ years in product management', 'Agile methodologies', 'Technical background'],
         skills: ['Product Strategy', 'User Stories', 'Roadmapping', 'Agile', 'Market Research'],
-        featured: true
+        featured: true,
+        yearsOfExperience: 4,
+        minQualification: 'Bachelor\'s Degree'
       },
     ];
     localStorage.setItem('talent_ats_jobs', JSON.stringify(defaultJobs));
@@ -111,6 +122,21 @@ const App = () => {
             <Route path="/jobs" element={
               <ProtectedRoute>
                 <Jobs />
+              </ProtectedRoute>
+            } />
+            <Route path="/candidates" element={
+              <ProtectedRoute>
+                <Candidates />
+              </ProtectedRoute>
+            } />
+            <Route path="/stats" element={
+              <ProtectedRoute>
+                <Statistics />
+              </ProtectedRoute>
+            } />
+            <Route path="/settings" element={
+              <ProtectedRoute>
+                <Settings />
               </ProtectedRoute>
             } />
             <Route path="/application/new" element={<JobApplication />} />

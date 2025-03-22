@@ -39,7 +39,9 @@ const defaultJobs = [
     requirements: ['5+ years of experience', 'React', 'Node.js', 'AWS', 'CI/CD'],
     skills: ['JavaScript', 'TypeScript', 'React', 'Node.js', 'AWS'],
     featured: true,
-    logo: '/lovable-uploads/c527b9f6-c10f-40f4-b84c-67261743d4c4.png'
+    logo: '/lovable-uploads/c527b9f6-c10f-40f4-b84c-67261743d4c4.png',
+    yearsOfExperience: 5,
+    minQualification: 'Bachelor\'s Degree'
   },
   {
     id: 2,
@@ -53,7 +55,9 @@ const defaultJobs = [
     description: 'Seeking a talented UI/UX designer to create beautiful, intuitive interfaces for our products.',
     requirements: ['3+ years of experience', 'Figma', 'Adobe XD', 'User Research'],
     skills: ['UI Design', 'UX Research', 'Figma', 'Adobe XD', 'Prototyping'],
-    featured: false
+    featured: false,
+    yearsOfExperience: 3,
+    minQualification: 'Bachelor\'s Degree'
   },
   {
     id: 3,
@@ -67,7 +71,9 @@ const defaultJobs = [
     description: 'Join our data science team to build machine learning models and analyze large datasets.',
     requirements: ['Masters/PhD in relevant field', 'Python', 'Machine Learning', 'SQL'],
     skills: ['Python', 'TensorFlow', 'SQL', 'Data Visualization', 'Machine Learning'],
-    featured: false
+    featured: false,
+    yearsOfExperience: 4,
+    minQualification: 'Master\'s Degree'
   },
   {
     id: 4,
@@ -81,7 +87,9 @@ const defaultJobs = [
     description: 'Lead product development initiatives from conception to launch.',
     requirements: ['4+ years in product management', 'Agile methodologies', 'Technical background'],
     skills: ['Product Strategy', 'User Stories', 'Roadmapping', 'Agile', 'Market Research'],
-    featured: true
+    featured: true,
+    yearsOfExperience: 4,
+    minQualification: 'Bachelor\'s Degree'
   },
 ];
 
@@ -106,7 +114,9 @@ export default function Jobs() {
     description: '',
     requirements: [],
     skills: [],
-    featured: false
+    featured: false,
+    yearsOfExperience: 0,
+    minQualification: 'Bachelor\'s Degree'
   });
 
   // Save jobs to localStorage whenever they change
@@ -129,7 +139,9 @@ export default function Jobs() {
       description: '',
       requirements: [],
       skills: [],
-      featured: false
+      featured: false,
+      yearsOfExperience: 0,
+      minQualification: 'Bachelor\'s Degree'
     });
   };
 
@@ -156,11 +168,22 @@ export default function Jobs() {
     setCurrentJob(prev => ({ ...prev, type: value }));
   };
 
+  const handleYearsOfExpChange = (e) => {
+    const years = parseInt(e.target.value) || 0;
+    setCurrentJob(prev => ({ ...prev, yearsOfExperience: years }));
+  };
+
+  const handleMinQualificationChange = (value) => {
+    setCurrentJob(prev => ({ ...prev, minQualification: value }));
+  };
+
   const handleEditJob = (job) => {
     setCurrentJob({
       ...job,
       requirements: job.requirements || [],
-      skills: job.skills || []
+      skills: job.skills || [],
+      yearsOfExperience: job.yearsOfExperience || 0,
+      minQualification: job.minQualification || 'Bachelor\'s Degree'
     });
     setIsEditMode(true);
     setIsDialogOpen(true);
@@ -236,7 +259,9 @@ export default function Jobs() {
                   description: '',
                   requirements: [],
                   skills: [],
-                  featured: false
+                  featured: false,
+                  yearsOfExperience: 0,
+                  minQualification: 'Bachelor\'s Degree'
                 });
               }}>
                 <Plus className="h-4 w-4" />
@@ -254,7 +279,7 @@ export default function Jobs() {
                     : "Fill out the form below to create a new job posting."}
                 </DialogDescription>
               </DialogHeader>
-              <div className="grid gap-4 py-4">
+              <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="title">Job Title*</Label>
@@ -303,6 +328,39 @@ export default function Jobs() {
                         <SelectItem value="Contract">Contract</SelectItem>
                         <SelectItem value="Freelance">Freelance</SelectItem>
                         <SelectItem value="Internship">Internship</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="yearsOfExperience">Years of Experience*</Label>
+                    <Input 
+                      id="yearsOfExperience" 
+                      name="yearsOfExperience" 
+                      type="number" 
+                      min="0"
+                      value={currentJob.yearsOfExperience} 
+                      onChange={handleYearsOfExpChange}
+                      placeholder="e.g. 3"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="minQualification">Minimum Qualification*</Label>
+                    <Select 
+                      onValueChange={handleMinQualificationChange} 
+                      defaultValue={currentJob.minQualification}
+                    >
+                      <SelectTrigger id="minQualification">
+                        <SelectValue placeholder="Select minimum qualification" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="High School">High School</SelectItem>
+                        <SelectItem value="Associate's Degree">Associate's Degree</SelectItem>
+                        <SelectItem value="Bachelor's Degree">Bachelor's Degree</SelectItem>
+                        <SelectItem value="Master's Degree">Master's Degree</SelectItem>
+                        <SelectItem value="PhD">PhD</SelectItem>
+                        <SelectItem value="None">None</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -399,9 +457,9 @@ export default function Jobs() {
                   <TableHead>Company</TableHead>
                   <TableHead>Location</TableHead>
                   <TableHead>Type</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Min. Exp</TableHead>
+                  <TableHead>Min. Qual</TableHead>
                   <TableHead>Posted Date</TableHead>
-                  <TableHead>Closing Date</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -412,13 +470,9 @@ export default function Jobs() {
                     <TableCell>{job.company}</TableCell>
                     <TableCell>{job.location}</TableCell>
                     <TableCell>{job.type}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                        Active
-                      </Badge>
-                    </TableCell>
+                    <TableCell>{job.yearsOfExperience}+ years</TableCell>
+                    <TableCell>{job.minQualification}</TableCell>
                     <TableCell>{new Date(job.postedDate).toLocaleDateString()}</TableCell>
-                    <TableCell>{job.closingDate ? new Date(job.closingDate).toLocaleDateString() : 'N/A'}</TableCell>
                     <TableCell>
                       <div className="flex gap-2">
                         <Button 
