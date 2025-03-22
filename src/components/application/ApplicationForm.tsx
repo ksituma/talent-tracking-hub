@@ -63,6 +63,13 @@ export function ApplicationForm() {
     }
   };
 
+  const handleNext = () => {
+    const currentIndex = steps.findIndex((step) => step.id === activeStep);
+    if (currentIndex < steps.length - 1) {
+      setActiveStep(steps[currentIndex + 1].id);
+    }
+  };
+
   const handleSubmit = () => {
     if (!formData.termsAccepted) {
       toast({
@@ -179,13 +186,7 @@ export function ApplicationForm() {
           <Button
             type="button"
             className="ml-auto flex items-center"
-            onClick={() => {
-              // This is just for the demo, normally this would validate the current step
-              const currentIndex = steps.findIndex((step) => step.id === activeStep);
-              if (currentIndex < steps.length - 1) {
-                setActiveStep(steps[currentIndex + 1].id);
-              }
-            }}
+            onClick={handleNext}
           >
             Next: {steps[steps.findIndex((step) => step.id === activeStep) + 1]?.title}
             <ArrowRight className="ml-2 h-4 w-4" />

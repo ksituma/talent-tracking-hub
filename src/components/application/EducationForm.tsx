@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DatePicker } from '@/components/common/DatePicker';
 import { FileUpload } from '@/components/common/FileUpload';
-import { ArrowRight, Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/components/ui/use-toast';
 
@@ -249,8 +249,7 @@ export function EducationForm({ onComplete, initialData = [] }: EducationFormPro
 
       <div className="flex justify-end">
         <Button type="submit" className="flex items-center">
-          Next: Experience
-          <ArrowRight className="ml-2 h-4 w-4" />
+          Save Education Information
         </Button>
       </div>
     </form>
