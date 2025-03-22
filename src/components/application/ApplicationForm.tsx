@@ -11,6 +11,7 @@ import { RefereesForm } from './RefereesForm';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
+import { useSearchParams } from 'react-router-dom';
 
 const steps = [
   { id: 'personal', title: 'Personal' },
@@ -23,6 +24,9 @@ const steps = [
 ];
 
 export function ApplicationForm() {
+  const [searchParams] = useSearchParams();
+  const jobId = searchParams.get('jobId');
+  
   const [activeStep, setActiveStep] = useState('personal');
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
   const [formData, setFormData] = useState({
@@ -34,6 +38,7 @@ export function ApplicationForm() {
     publications: [],
     referees: [],
     termsAccepted: false,
+    jobId: jobId || null,
   });
 
   const handleStepChange = (stepId: string) => {
@@ -64,6 +69,7 @@ export function ApplicationForm() {
   };
 
   const handleNext = () => {
+    // This function is now only used for navigation, not for data submission
     const currentIndex = steps.findIndex((step) => step.id === activeStep);
     if (currentIndex < steps.length - 1) {
       setActiveStep(steps[currentIndex + 1].id);
@@ -154,6 +160,7 @@ export function ApplicationForm() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900 mb-1">Job Application Form</h1>
         <p className="text-sm text-gray-600">Please fill out all required fields to submit your application.</p>
+        {jobId && <p className="text-sm font-medium text-blue-600 mt-1">Applying for Job ID: {jobId}</p>}
       </div>
 
       <div className="mb-8 overflow-x-auto">
@@ -170,8 +177,11 @@ export function ApplicationForm() {
         {renderActiveStep()}
       </div>
       
-      <div className="mt-8 flex justify-between">
-        {activeStep !== 'personal' && (
+      {/* Only show these nav buttons for steps that don't handle their own navigation */}
+      {activeStep !== 'personal' && activeStep !== 'education' && activeStep !== 'experience' && 
+       activeStep !== 'short-courses' && activeStep !== 'professional-bodies' && 
+       activeStep !== 'publications' && activeStep !== 'referees' && (
+        <div className="mt-8 flex justify-between">
           <Button
             type="button"
             variant="outline"
@@ -179,29 +189,29 @@ export function ApplicationForm() {
             className="flex items-center"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Previous: {steps[steps.findIndex((step) => step.id === activeStep) - 1]?.title}
+            Previous
           </Button>
-        )}
-        {activeStep !== 'referees' ? (
-          <Button
-            type="button"
-            className="ml-auto flex items-center"
-            onClick={handleNext}
-          >
-            Next: {steps[steps.findIndex((step) => step.id === activeStep) + 1]?.title}
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        ) : (
-          <Button
-            type="button"
-            className="ml-auto flex items-center"
-            onClick={handleSubmit}
-          >
-            Submit Application
-            <Check className="ml-2 h-4 w-4" />
-          </Button>
-        )}
-      </div>
+          {activeStep !== 'referees' ? (
+            <Button
+              type="button"
+              className="ml-auto flex items-center"
+              onClick={handleNext}
+            >
+              Next
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              className="ml-auto flex items-center"
+              onClick={handleSubmit}
+            >
+              Submit Application
+              <Check className="ml-2 h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

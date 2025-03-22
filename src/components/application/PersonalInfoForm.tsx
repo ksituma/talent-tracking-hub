@@ -5,6 +5,7 @@ import { DatePicker } from '@/components/common/DatePicker';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Input } from '@/components/ui/input';
+import { FileUpload } from '@/components/common/FileUpload';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowRight } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
@@ -27,6 +28,8 @@ export function PersonalInfoForm({ onComplete, initialData = {} }: PersonalInfoF
     ethnicity: initialData.ethnicity || '',
     homeCountry: initialData.homeCountry || '',
     disability: initialData.disability || '',
+    disabilityType: initialData.disabilityType || '',
+    taxExemptionCertificate: initialData.taxExemptionCertificate || null,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -48,6 +51,13 @@ export function PersonalInfoForm({ onComplete, initialData = {} }: PersonalInfoF
 
   const handleDateChange = (name: string, date?: Date) => {
     setFormData((prev) => ({ ...prev, [name]: date }));
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const handleFileUpload = (name: string, file: File | null) => {
+    setFormData((prev) => ({ ...prev, [name]: file }));
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: '' }));
     }
@@ -98,6 +108,10 @@ export function PersonalInfoForm({ onComplete, initialData = {} }: PersonalInfoF
       newErrors.disability = 'This field is required';
     }
     
+    if (formData.disability === 'yes' && !formData.disabilityType) {
+      newErrors.disabilityType = 'Nature of disability is required';
+    }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -130,6 +144,11 @@ export function PersonalInfoForm({ onComplete, initialData = {} }: PersonalInfoF
   const countries = [
     'United States', 'Canada', 'United Kingdom', 'Australia', 
     'Germany', 'France', 'Japan', 'China', 'India', 'Brazil'
+  ];
+
+  // Disability types
+  const disabilityTypes = [
+    'Physical', 'Visual', 'Hearing', 'Cognitive', 'Neurological', 'Other'
   ];
 
   return (
@@ -337,6 +356,46 @@ export function PersonalInfoForm({ onComplete, initialData = {} }: PersonalInfoF
         </RadioGroup>
         {errors.disability && <p className="form-error">{errors.disability}</p>}
       </div>
+
+      {formData.disability === 'yes' && (
+        <div className="space-y-6 p-4 border border-blue-100 rounded-md bg-blue-50">
+          <div>
+            <label htmlFor="disabilityType" className="form-label">
+              Nature of Disability <span className="text-red-500">*</span>
+            </label>
+            <Select
+              value={formData.disabilityType}
+              onValueChange={(value) => handleSelectChange('disabilityType', value)}
+            >
+              <SelectTrigger 
+                id="disabilityType"
+                className={errors.disabilityType ? 'border-red-500' : ''}
+              >
+                <SelectValue placeholder="Select disability type" />
+              </SelectTrigger>
+              <SelectContent>
+                {disabilityTypes.map((type) => (
+                  <SelectItem key={type} value={type.toLowerCase()}>
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.disabilityType && <p className="form-error">{errors.disabilityType}</p>}
+          </div>
+
+          <div>
+            <label className="form-label">Tax Exemption Certificate</label>
+            <FileUpload
+              accept=".pdf,.jpg,.png"
+              maxSize={5}
+              onFileChange={(file) => handleFileUpload('taxExemptionCertificate', file)}
+              currentFileName={formData.taxExemptionCertificate?.name || ''}
+            />
+            <p className="text-xs text-gray-500 mt-1">Upload tax exemption certificate (PDF, JPG, PNG, max 5MB)</p>
+          </div>
+        </div>
+      )}
 
       <div className="flex justify-end">
         <Button type="submit" className="flex items-center">
