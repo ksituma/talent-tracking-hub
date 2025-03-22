@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -11,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { StatCard } from '@/components/dashboard/StatCard';
 import { VacancyChart } from '@/components/dashboard/VacancyChart';
 import { SkillsChart } from '@/components/dashboard/SkillsChart';
-import { FileText, Users, Calendar, MessageSquare, Plus, Search, Filter, Download } from 'lucide-react';
+import { FileText, Users, Calendar, MessageSquare, Plus, Search, Filter, Download, Briefcase } from 'lucide-react';
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('overview');
