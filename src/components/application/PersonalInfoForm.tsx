@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { DatePicker } from '@/components/common/DatePicker';
@@ -134,19 +133,16 @@ export function PersonalInfoForm({ onComplete, initialData = {} }: PersonalInfoF
     }
   };
 
-  // Ethnicities list for dropdown
   const ethnicities = [
     'African', 'Asian', 'Caucasian', 'Hispanic/Latino', 
     'Middle Eastern', 'Native American', 'Pacific Islander', 'Other'
   ];
 
-  // Countries list for dropdown
   const countries = [
     'United States', 'Canada', 'United Kingdom', 'Australia', 
     'Germany', 'France', 'Japan', 'China', 'India', 'Brazil'
   ];
 
-  // Disability types
   const disabilityTypes = [
     'Physical', 'Visual', 'Hearing', 'Cognitive', 'Neurological', 'Other'
   ];
@@ -388,11 +384,10 @@ export function PersonalInfoForm({ onComplete, initialData = {} }: PersonalInfoF
             <label className="form-label">Tax Exemption Certificate</label>
             <FileUpload
               accept=".pdf,.jpg,.png"
-              maxSize={5}
-              onFileChange={(file) => handleFileUpload('taxExemptionCertificate', file)}
-              currentFileName={formData.taxExemptionCertificate?.name || ''}
+              onChange={(file) => handleFileUpload('taxExemptionCertificate', file)}
+              value={formData.taxExemptionCertificate}
+              helperText="Upload tax exemption certificate (PDF, JPG, PNG, max 5MB)"
             />
-            <p className="text-xs text-gray-500 mt-1">Upload tax exemption certificate (PDF, JPG, PNG, max 5MB)</p>
           </div>
         </div>
       )}
