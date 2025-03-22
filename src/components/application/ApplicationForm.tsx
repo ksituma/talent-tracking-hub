@@ -23,9 +23,16 @@ const steps = [
   { id: 'referees', title: 'Referees' },
 ];
 
-export function ApplicationForm() {
+interface ApplicationFormProps {
+  jobId?: string | null;
+}
+
+export function ApplicationForm({ jobId }: ApplicationFormProps) {
   const [searchParams] = useSearchParams();
-  const jobId = searchParams.get('jobId');
+  const jobIdFromUrl = searchParams.get('jobId');
+  
+  // Use jobId prop if provided, otherwise fall back to URL param
+  const effectiveJobId = jobId || jobIdFromUrl;
   
   const [activeStep, setActiveStep] = useState('personal');
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
@@ -38,7 +45,7 @@ export function ApplicationForm() {
     publications: [],
     referees: [],
     termsAccepted: false,
-    jobId: jobId || null,
+    jobId: effectiveJobId || null,
   });
 
   const handleStepChange = (stepId: string) => {
@@ -160,7 +167,7 @@ export function ApplicationForm() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900 mb-1">Job Application Form</h1>
         <p className="text-sm text-gray-600">Please fill out all required fields to submit your application.</p>
-        {jobId && <p className="text-sm font-medium text-blue-600 mt-1">Applying for Job ID: {jobId}</p>}
+        {effectiveJobId && <p className="text-sm font-medium text-blue-600 mt-1">Applying for Job ID: {effectiveJobId}</p>}
       </div>
 
       <div className="mb-8 overflow-x-auto">
