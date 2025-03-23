@@ -1,23 +1,30 @@
 
 import React from 'react';
-import { Sidebar } from './Sidebar';
 import { Header } from './Header';
+import { Sidebar } from './Sidebar';
 
 interface AppShellProps {
   children: React.ReactNode;
   showSidebar?: boolean;
+  showAdminLogin?: boolean;
 }
 
-export function AppShell({ children, showSidebar = true }: AppShellProps) {
+export function AppShell({ 
+  children, 
+  showSidebar = true,
+  showAdminLogin = false 
+}: AppShellProps) {
   return (
-    <div className="flex h-screen bg-gray-50">
-      {showSidebar && <Sidebar />}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header showAdminLogin={!showSidebar} />
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
-          <div className="animate-fade-in">
-            {children}
-          </div>
+    <div className="min-h-screen flex flex-col">
+      <Header showAdminLogin={showAdminLogin} />
+      
+      <div className="flex flex-1">
+        {showSidebar && (
+          <Sidebar />
+        )}
+        
+        <main className="flex-1 bg-gray-50">
+          {children}
         </main>
       </div>
     </div>

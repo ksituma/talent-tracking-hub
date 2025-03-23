@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -25,16 +24,6 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   }
   
   return <>{children}</>;
-};
-
-const AdminRedirect = () => {
-  const isAuthenticated = localStorage.getItem('adminLoggedIn') === 'true';
-  
-  if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
-  }
-  
-  return <Index />;
 };
 
 const App = () => {
@@ -117,7 +106,7 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<AdminRedirect />} />
+            <Route path="/" element={<Index />} />
             <Route path="/admin-login" element={<AdminLogin />} />
             <Route path="/dashboard" element={
               <ProtectedRoute>
