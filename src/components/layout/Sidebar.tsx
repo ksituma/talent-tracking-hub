@@ -39,7 +39,7 @@ export function Sidebar() {
       </div>
 
       <nav className="mt-6 px-2">
-        <SidebarLink to="/" icon={<LayoutDashboard />} label="Dashboard" collapsed={collapsed} />
+        <SidebarLink to="/dashboard" icon={<LayoutDashboard />} label="Dashboard" collapsed={collapsed} />
         <SidebarLink to="/applications" icon={<FileText />} label="Applications" collapsed={collapsed} />
         <SidebarLink to="/jobs" icon={<Briefcase />} label="Jobs" collapsed={collapsed} />
         <SidebarLink to="/candidates" icon={<UserCircle />} label="Candidates" collapsed={collapsed} />

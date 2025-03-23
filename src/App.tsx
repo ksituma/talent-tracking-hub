@@ -27,6 +27,16 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+const AdminRedirect = () => {
+  const isAuthenticated = localStorage.getItem('adminLoggedIn') === 'true';
+  
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  
+  return <Index />;
+};
+
 const App = () => {
   // Initialize jobs data if not already present
   if (!localStorage.getItem('talent_ats_jobs')) {
@@ -107,7 +117,7 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Index />} />
+            <Route path="/" element={<AdminRedirect />} />
             <Route path="/admin-login" element={<AdminLogin />} />
             <Route path="/dashboard" element={
               <ProtectedRoute>
