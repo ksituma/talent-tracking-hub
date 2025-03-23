@@ -23,8 +23,8 @@ export default function AdminLogin() {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simple admin authentication
-    if (username === 'admin' && password === 'admin123') {
+    // Updated admin authentication with new credentials
+    if (username === 'admin' && password === 'kenyaDLC00') {
       setTimeout(() => {
         localStorage.setItem('adminLoggedIn', 'true');
         setIsLoading(false);

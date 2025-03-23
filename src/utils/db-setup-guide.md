@@ -36,6 +36,39 @@ The application uses the schema defined in `db-schema.ts`. This schema includes 
    - Use an ORM like Prisma, TypeORM, or Sequelize to connect to the database
    - Define models based on the schema in `db-schema.ts`
 
+## Authentication Setup
+
+The current application uses a simple authentication system with hardcoded credentials:
+- Username: `admin`
+- Password: `kenyaDLC00`
+
+When implementing the database-backed authentication:
+
+1. **Create Admin Users Table**:
+   - Define schema as per `User` interface in `db-schema.ts`
+   - Ensure passwords are properly hashed using bcrypt or similar
+   
+2. **Seed Initial Admin User**:
+   ```sql
+   INSERT INTO users (id, email, password, first_name, last_name, role, created_at, updated_at)
+   VALUES (
+     gen_random_uuid(),
+     'admin@example.com',
+     -- Store hashed password for 'kenyaDLC00', not plaintext
+     '$2a$12$xxxxxx', -- Replace with actual bcrypt hash
+     'Admin',
+     'User',
+     'admin',
+     NOW(),
+     NOW()
+   );
+   ```
+
+3. **Update Authentication Logic**:
+   - Modify the login endpoint to query the database
+   - Verify password with bcrypt compare
+   - Issue JWT tokens for session management (recommended over localStorage)
+
 ## Example: Setting Up Prisma ORM
 
 1. **Add Prisma to your project**:
@@ -106,6 +139,23 @@ To transition from using LocalStorage to a real database:
 2. Update the frontend code to use these API endpoints instead of LocalStorage
 3. Implement proper authentication and authorization for secure access to the API
 4. Migrate existing data from LocalStorage to the database (if needed)
+
+## Security Considerations
+
+1. **Password Storage**: 
+   - Never store passwords in plaintext
+   - Use bcrypt or Argon2 for password hashing
+   - Set appropriate work factors for password hashing
+
+2. **Authentication**:
+   - Consider implementing JWT-based authentication instead of localStorage
+   - Set appropriate token expiration times
+   - Implement refresh token rotation for enhanced security
+
+3. **Authorization**:
+   - Implement role-based access control (RBAC)
+   - Use PostgreSQL Row-Level Security (RLS) policies
+   - Validate permissions on both client and server sides
 
 ## Testing the Database Connection
 
