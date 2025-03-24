@@ -1,17 +1,44 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Briefcase, Lock, User } from 'lucide-react';
+import { Briefcase, Lock, User, Database, CheckCircle2, XCircle } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 
 export default function AdminLogin() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [dbStatus, setDbStatus] = useState<'checking' | 'connected' | 'error' | null>(null);
   const navigate = useNavigate();
+
+  // Check database connection on component mount
+  useEffect(() => {
+    checkDatabaseConnection();
+  }, []);
+
+  // Function to check database connection
+  const checkDatabaseConnection = async () => {
+    setDbStatus('checking');
+    try {
+      const response = await fetch('/health');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.database === 'connected') {
+          setDbStatus('connected');
+        } else {
+          setDbStatus('error');
+        }
+      } else {
+        setDbStatus('error');
+      }
+    } catch (error) {
+      setDbStatus('error');
+      console.error('Database connection check failed:', error);
+    }
+  };
 
   // Check if already logged in
   const isAuthenticated = localStorage.getItem('adminLoggedIn') === 'true';
@@ -24,26 +51,25 @@ export default function AdminLogin() {
     setIsLoading(true);
     
     try {
-      // This will be replaced with an actual API call to the backend
-      // when the PostgreSQL database is connected
-      
-      // For now, we'll use the hardcoded login while setting up the database
-      if (username === 'admin' && password === 'kenyaDLC00') {
-        // In production, this should be an API call like:
-        // const response = await fetch('/api/auth/login', {
-        //   method: 'POST',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify({ username, password }),
-        // });
-        // 
-        // if (!response.ok) throw new Error('Authentication failed');
-        // const data = await response.json();
+      // Check if we're using the API or the hardcoded login
+      if (dbStatus === 'connected') {
+        // Using real API if database is connected
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password }),
+        });
         
-        // Mock API delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Authentication failed');
+        }
         
-        // Store authentication state - in production this would use JWT tokens
+        const data = await response.json();
+        
+        // Store authentication state
         localStorage.setItem('adminLoggedIn', 'true');
+        localStorage.setItem('token', data.token);
         
         toast({
           title: "Login Successful",
@@ -51,7 +77,22 @@ export default function AdminLogin() {
         });
         navigate('/dashboard');
       } else {
-        throw new Error("Invalid credentials");
+        // Fallback to hardcoded login while database connection is being set up
+        if (username === 'admin' && password === 'kenyaDLC00') {
+          // Mock API delay
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          // Store authentication state - in production this would use JWT tokens
+          localStorage.setItem('adminLoggedIn', 'true');
+          
+          toast({
+            title: "Login Successful (Local Mode)",
+            description: "Welcome to the admin dashboard. Note: You're using local authentication.",
+          });
+          navigate('/dashboard');
+        } else {
+          throw new Error("Invalid credentials");
+        }
       }
     } catch (error) {
       toast({
@@ -77,6 +118,21 @@ export default function AdminLogin() {
           <CardDescription>
             Enter your credentials to access the dashboard
           </CardDescription>
+          {dbStatus && (
+            <div className={`flex items-center justify-center mt-2 text-sm ${
+              dbStatus === 'connected' ? 'text-green-500' : 
+              dbStatus === 'error' ? 'text-red-500' : 'text-yellow-500'
+            }`}>
+              <Database className="h-4 w-4 mr-1" />
+              {dbStatus === 'connected' ? (
+                <span className="flex items-center"><CheckCircle2 className="h-3 w-3 mr-1" /> Database Connected</span>
+              ) : dbStatus === 'error' ? (
+                <span className="flex items-center"><XCircle className="h-3 w-3 mr-1" /> Database Connection Error</span>
+              ) : (
+                <span>Checking Database...</span>
+              )}
+            </div>
+          )}
         </CardHeader>
         <form onSubmit={handleLogin}>
           <CardContent className="space-y-4">
