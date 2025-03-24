@@ -1,356 +1,677 @@
 
-# PostgreSQL Database Setup Guide for Talent ATS with Coolify
+# Comprehensive Deployment Guide: Talent ATS with PostgreSQL on Coolify
 
-This guide explains how to set up a PostgreSQL database for the Talent ATS application when deploying with Coolify.
+This guide provides step-by-step instructions for deploying your Talent ATS application to Coolify with a PostgreSQL database.
 
-## Coolify Deployment Overview
+## Overview of the Deployment Architecture
 
-Coolify is a self-hosted PaaS (Platform as a Service) that makes it easy to deploy applications and databases. Here's how to deploy your Talent ATS application with a PostgreSQL database on Coolify:
+When deployed, your application will consist of:
 
-### Step 1: Create a PostgreSQL Database in Coolify
+1. **Frontend**: The React application (Talent ATS) served by Nginx
+2. **Backend**: Express.js API that connects to the PostgreSQL database
+3. **Database**: PostgreSQL database managed by Coolify
 
-1. **Access your Coolify dashboard** and navigate to "Resources"
+## Step 1: Sign Up for Coolify
+
+1. Go to [Coolify](https://coolify.io/) and create an account
+2. Follow the instructions to install Coolify on your server or use their cloud offering
+3. Once installed, access your Coolify dashboard
+
+## Step 2: Create a PostgreSQL Database in Coolify
+
+1. **From your Coolify dashboard**, navigate to "Resources" in the sidebar
 2. **Click "New Resource"** and select "PostgreSQL"
 3. **Configure your PostgreSQL database**:
    - Name: `talent_ats_db` (or your preferred name)
    - Username: Create a secure username
-   - Password: Generate a strong password
-   - Version: Select the latest PostgreSQL version (14 or newer recommended)
-4. **Create the database** and wait for it to be provisioned
-5. **Save the connection details** provided by Coolify:
+   - Password: Generate a strong password (store this safely!)
+   - Version: 14 or newer recommended
+   - Storage: Allocate at least 1GB for this application
+4. **Click "Create"** and wait for database provisioning to complete
+5. **Record these connection details** provided by Coolify:
    - Host
    - Port (usually 5432)
    - Database name
    - Username
    - Password
 
-### Step 2: Deploy Your Application in Coolify
+## Step 3: Push Your Code to a Git Repository
 
-1. **Create a new service** in Coolify
-2. **Connect to your Git repository** containing the Talent ATS code
-3. **Configure build settings**:
-   - Build command: `npm run build`
-   - Output directory: `dist`
-   - Use the Dockerfile in your repository
+1. Create a repository on GitHub, GitLab, or another Git provider
+2. Push your Talent ATS codebase to the repository
+3. Ensure your repository includes:
+   - All application code
+   - The updated `nginx.conf` file
+   - A `Dockerfile` for the frontend (if not already present)
 
-4. **Add environment variables**:
-   ```
-   DATABASE_URL=postgresql://username:password@db-host:5432/dbname
-   ```
-   Replace with your actual PostgreSQL connection details from Step 1.
+## Step 4: Create a Backend API Service
 
-5. **Deploy your application**
+Create a simple Express backend in a new directory (e.g., `backend`):
 
-### Step 3: Initialize Your Database
+```js
+// backend/index.js
+const express = require('express');
+const { Pool } = require('pg');
+const cors = require('cors');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
-After deploying your application, you need to initialize your database with the schema defined in `db-schema.ts`.
+const app = express();
+app.use(cors());
+app.use(express.json());
 
-#### Option 1: Using Prisma (Recommended)
+// PostgreSQL connection pool
+const pool = new Pool({
+  user: process.env.DB_USER,
+  host: process.env.DB_HOST,
+  database: process.env.DB_NAME,
+  password: process.env.DB_PASSWORD,
+  port: process.env.DB_PORT || 5432,
+});
 
-1. **Install Prisma in your development environment**:
-   ```bash
-   npm install prisma @prisma/client
-   npx prisma init
-   ```
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
 
-2. **Create a Prisma schema** based on the interfaces in `db-schema.ts`:
-   ```prisma
-   // prisma/schema.prisma
-   generator client {
-     provider = "prisma-client-js"
-   }
-   
-   datasource db {
-     provider = "postgresql"
-     url      = env("DATABASE_URL")
-   }
-   
-   model User {
-     id        String   @id @default(uuid())
-     email     String   @unique
-     password  String
-     firstName String   @map("first_name")
-     lastName  String   @map("last_name")
-     role      Role     @default(admin)
-     createdAt DateTime @default(now()) @map("created_at")
-     updatedAt DateTime @updatedAt @map("updated_at")
-     
-     jobs               Job[]
-     shortlistingCriteria ShortlistingCriteria[]
-     
-     @@map("users")
-   }
-   
-   model Job {
-     id                String   @id @default(uuid())
-     title             String
-     company           String
-     location          String
-     type              String
-     salary            String
-     description       String
-     requirements      String[]
-     skills            String[]
-     minQualification  String   @map("min_qualification")
-     yearsOfExperience Int      @map("years_of_experience")
-     postedDate        DateTime @map("posted_date")
-     closingDate       DateTime @map("closing_date")
-     featured          Boolean  @default(false)
-     logo              String?
-     createdAt         DateTime @default(now()) @map("created_at")
-     updatedAt         DateTime @updatedAt @map("updated_at")
-     createdBy         String   @map("created_by")
-     
-     user              User     @relation(fields: [createdBy], references: [id])
-     applications      Application[]
-     shortlistingCriteria ShortlistingCriteria?
-     
-     @@map("jobs")
-   }
-   
-   // Define remaining models for Candidate, Application, Education, etc.
-   // based on the interfaces in db-schema.ts
-   
-   enum Role {
-     admin
-     recruiter
-     manager
-   }
-   ```
+// Authentication endpoint
+app.post('/auth/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    
+    const result = await pool.query(
+      'SELECT * FROM users WHERE email = $1',
+      [username]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    
+    const user = result.rows[0];
+    const passwordValid = await bcrypt.compare(password, user.password);
+    
+    if (!passwordValid) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    
+    // Create JWT token
+    const token = jwt.sign(
+      { userId: user.id, role: user.role },
+      process.env.JWT_SECRET || 'your-temporary-secret-key',
+      { expiresIn: '8h' }
+    );
+    
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 
-3. **Generate Prisma client**:
-   ```bash
-   npx prisma generate
-   ```
+// Middleware to verify JWT token
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  
+  if (!token) return res.status(401).json({ error: 'Authentication required' });
+  
+  jwt.verify(token, process.env.JWT_SECRET || 'your-temporary-secret-key', (err, user) => {
+    if (err) return res.status(403).json({ error: 'Invalid token' });
+    req.user = user;
+    next();
+  });
+};
 
-4. **Run migrations**:
-   ```bash
-   npx prisma migrate dev --name init
-   ```
+// Example protected route
+app.get('/jobs', authenticateToken, async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM jobs ORDER BY created_at DESC');
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching jobs:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 
-5. **Seed initial admin user**:
-   Create a seed script (`prisma/seed.ts`):
-   ```typescript
-   import { PrismaClient } from '@prisma/client';
-   import * as bcrypt from 'bcrypt';
-   
-   const prisma = new PrismaClient();
-   
-   async function main() {
-     // Create admin user
-     const hashedPassword = await bcrypt.hash('kenyaDLC00', 10);
-     
-     await prisma.user.upsert({
-       where: { email: 'admin@example.com' },
-       update: {},
-       create: {
-         email: 'admin@example.com',
-         password: hashedPassword,
-         firstName: 'Admin',
-         lastName: 'User',
-         role: 'admin',
-       },
-     });
-     
-     console.log('Database has been seeded.');
-   }
-   
-   main()
-     .catch((e) => {
-       console.error(e);
-       process.exit(1);
-     })
-     .finally(async () => {
-       await prisma.$disconnect();
-     });
-   ```
+// Add more endpoints for candidates, applications, etc.
 
-6. **Run the seed script**:
-   ```bash
-   npx prisma db seed
-   ```
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+```
 
-#### Option 2: Direct SQL (Alternative)
+Create a Dockerfile for the backend:
 
-If you prefer to use raw SQL instead of an ORM, you can execute SQL statements directly:
+```dockerfile
+# backend/Dockerfile
+FROM node:18-alpine
 
-1. **Connect to your PostgreSQL database** using a tool like psql, pgAdmin, or the Coolify database console.
+WORKDIR /app
 
-2. **Create tables** based on the interfaces in `db-schema.ts`:
-   ```sql
-   CREATE TABLE users (
-     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-     email VARCHAR(255) UNIQUE NOT NULL,
-     password VARCHAR(255) NOT NULL,
-     first_name VARCHAR(100) NOT NULL,
-     last_name VARCHAR(100) NOT NULL,
-     role VARCHAR(20) NOT NULL DEFAULT 'admin',
-     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
-   );
-   
-   CREATE TABLE jobs (
-     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-     title VARCHAR(255) NOT NULL,
-     company VARCHAR(255) NOT NULL,
-     location VARCHAR(255) NOT NULL,
-     type VARCHAR(50) NOT NULL,
-     salary VARCHAR(100) NOT NULL,
-     description TEXT NOT NULL,
-     requirements TEXT[] NOT NULL,
-     skills TEXT[] NOT NULL,
-     min_qualification VARCHAR(100) NOT NULL,
-     years_of_experience INTEGER NOT NULL,
-     posted_date TIMESTAMP NOT NULL,
-     closing_date TIMESTAMP NOT NULL,
-     featured BOOLEAN DEFAULT false,
-     logo VARCHAR(255),
-     created_at TIMESTAMP DEFAULT NOW(),
-     updated_at TIMESTAMP DEFAULT NOW(),
-     created_by UUID REFERENCES users(id)
-   );
-   
-   -- Create remaining tables for candidates, applications, education, etc.
-   -- based on the interfaces in db-schema.ts
-   ```
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+
+EXPOSE 3000
+
+CMD ["node", "index.js"]
+```
+
+## Step 5: Deploy Your Backend to Coolify
+
+1. **From the Coolify dashboard**, click "Create Service"
+2. **Select your Git repository** and switch to the `backend` directory
+3. **Configure the deployment**:
+   - Select Node.js as the runtime
+   - Specify build and start commands based on your backend
+   - Add environment variables for PostgreSQL connection:
+     ```
+     DB_USER=your_db_username
+     DB_HOST=your_db_host
+     DB_NAME=your_db_name
+     DB_PASSWORD=your_db_password
+     DB_PORT=5432
+     JWT_SECRET=generate_a_strong_random_secret
+     ```
+4. **Deploy the backend**
+
+## Step 6: Deploy Your Frontend to Coolify
+
+1. **From the Coolify dashboard**, click "Create Service" again
+2. **Select your Git repository** and use the main directory
+3. **Configure the deployment**:
+   - Use a static site template or Docker template
+   - Set the Docker build context to your repository root
+   - Ensure your Dockerfile includes all the necessary build steps:
+     ```dockerfile
+     FROM node:18-alpine as build
+     WORKDIR /app
+     COPY package*.json ./
+     RUN npm install
+     COPY . .
+     RUN npm run build
+
+     # Serving stage
+     FROM nginx:alpine
+     COPY --from=build /app/dist /usr/share/nginx/html
+     COPY nginx.conf /etc/nginx/conf.d/default.conf
+     EXPOSE 80
+     CMD ["nginx", "-g", "daemon off;"]
+     ```
+4. **Add environment variables** if needed for your frontend
+5. **Deploy the frontend**
+
+## Step 7: Initialize Your Database
+
+After deploying your backend, you need to create the database schema and seed initial data.
+
+### Option 1: Using Prisma (Recommended)
+
+1. **Create a Prisma schema** in your backend project:
+
+```prisma
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  firstName String   @map("first_name")
+  lastName  String   @map("last_name")
+  role      Role     @default(admin)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  jobs               Job[]
+  shortlistingCriteria ShortlistingCriteria[]
+  
+  @@map("users")
+}
+
+model Job {
+  id                String   @id @default(uuid())
+  title             String
+  company           String
+  location          String
+  type              String
+  salary            String
+  description       String
+  requirements      String[]
+  skills            String[]
+  minQualification  String   @map("min_qualification")
+  yearsOfExperience Int      @map("years_of_experience")
+  postedDate        DateTime @map("posted_date")
+  closingDate       DateTime @map("closing_date")
+  featured          Boolean  @default(false)
+  logo              String?
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+  createdBy         String   @map("created_by")
+  
+  user              User     @relation(fields: [createdBy], references: [id])
+  applications      Application[]
+  shortlistingCriteria ShortlistingCriteria?
+  
+  @@map("jobs")
+}
+
+model Candidate {
+  id               String   @id @default(uuid())
+  firstName        String   @map("first_name")
+  lastName         String   @map("last_name")
+  email            String   @unique
+  phone            String
+  address          String
+  city             String
+  country          String
+  nationalId       String?  @map("national_id")
+  dateOfBirth      DateTime @map("date_of_birth")
+  gender           String
+  highestEducation String   @map("highest_education")
+  yearsOfExperience Int      @map("years_of_experience")
+  currentPosition  String?  @map("current_position")
+  currentEmployer  String?  @map("current_employer")
+  skills           String[]
+  resumeUrl        String?  @map("resume_url")
+  photoUrl         String?  @map("photo_url")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+  
+  education      Education[]
+  experience     Experience[]
+  applications   Application[]
+  shortCourses   ShortCourse[]
+  publications   Publication[]
+  referees       Referee[]
+  
+  @@map("candidates")
+}
+
+model Application {
+  id          String   @id @default(uuid())
+  jobId       String   @map("job_id")
+  candidateId String   @map("candidate_id")
+  status      String   @default("applied")
+  appliedDate DateTime @default(now()) @map("applied_date")
+  lastUpdated DateTime @updatedAt @map("last_updated")
+  coverLetter String?  @map("cover_letter")
+  
+  job       Job       @relation(fields: [jobId], references: [id])
+  candidate Candidate @relation(fields: [candidateId], references: [id])
+  
+  @@map("applications")
+}
+
+model Education {
+  id          String   @id @default(uuid())
+  candidateId String   @map("candidate_id")
+  institution String
+  degree      String
+  fieldOfStudy String   @map("field_of_study")
+  startDate   DateTime @map("start_date")
+  endDate     DateTime? @map("end_date")
+  
+  candidate   Candidate @relation(fields: [candidateId], references: [id])
+  
+  @@map("education")
+}
+
+model Experience {
+  id          String   @id @default(uuid())
+  candidateId String   @map("candidate_id")
+  company     String
+  position    String
+  startDate   DateTime @map("start_date")
+  endDate     DateTime? @map("end_date")
+  description String?
+  
+  candidate   Candidate @relation(fields: [candidateId], references: [id])
+  
+  @@map("experience")
+}
+
+model ShortCourse {
+  id          String   @id @default(uuid())
+  candidateId String   @map("candidate_id")
+  title       String
+  institution String
+  completionDate DateTime @map("completion_date")
+  
+  candidate   Candidate @relation(fields: [candidateId], references: [id])
+  
+  @@map("short_courses")
+}
+
+model Publication {
+  id          String   @id @default(uuid())
+  candidateId String   @map("candidate_id")
+  title       String
+  journal     String
+  publishDate DateTime @map("publish_date")
+  url         String?
+  
+  candidate   Candidate @relation(fields: [candidateId], references: [id])
+  
+  @@map("publications")
+}
+
+model Referee {
+  id          String   @id @default(uuid())
+  candidateId String   @map("candidate_id")
+  name        String
+  position    String
+  company     String
+  email       String
+  phone       String
+  
+  candidate   Candidate @relation(fields: [candidateId], references: [id])
+  
+  @@map("referees")
+}
+
+model ShortlistingCriteria {
+  id                String   @id @default(uuid())
+  jobId             String   @unique @map("job_id")
+  userId            String   @map("user_id")
+  minYearsExperience Int     @map("min_years_experience")
+  requiredSkills    String[] @map("required_skills")
+  education         String
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+  
+  job               Job     @relation(fields: [jobId], references: [id])
+  user              User    @relation(fields: [userId], references: [id])
+  
+  @@map("shortlisting_criteria")
+}
+
+enum Role {
+  admin
+  recruiter
+  manager
+}
+```
+
+2. **Update your backend to use Prisma**:
+
+```js
+// Add to your backend:
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
+
+// Then replace direct pg queries with prisma
+```
+
+3. **Create a migration**:
+
+```bash
+npx prisma migrate dev --name init
+```
+
+4. **Create a seed script** (prisma/seed.js):
+
+```js
+const { PrismaClient } = require('@prisma/client');
+const bcrypt = require('bcrypt');
+
+const prisma = new PrismaClient();
+
+async function main() {
+  // Create admin user
+  const hashedPassword = await bcrypt.hash('kenyaDLC00', 10);
+  
+  await prisma.user.upsert({
+    where: { email: 'admin@example.com' },
+    update: {},
+    create: {
+      email: 'admin',
+      password: hashedPassword,
+      firstName: 'Admin',
+      lastName: 'User',
+      role: 'admin',
+    },
+  });
+  
+  console.log('Database has been seeded.');
+}
+
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
+```
+
+5. **Run the seed script**:
+
+```bash
+npx prisma db seed
+```
+
+### Option 2: Using Direct SQL
+
+If you prefer to use raw SQL:
+
+1. **Connect to your PostgreSQL database** using Coolify's database console or a tool like psql, DBeaver, or pgAdmin.
+
+2. **Execute SQL commands** to create your schema:
+
+```sql
+CREATE TABLE users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email VARCHAR(255) UNIQUE NOT NULL,
+  password VARCHAR(255) NOT NULL,
+  first_name VARCHAR(100) NOT NULL,
+  last_name VARCHAR(100) NOT NULL,
+  role VARCHAR(20) NOT NULL DEFAULT 'admin',
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE jobs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title VARCHAR(255) NOT NULL,
+  company VARCHAR(255) NOT NULL,
+  location VARCHAR(255) NOT NULL,
+  type VARCHAR(50) NOT NULL,
+  salary VARCHAR(100) NOT NULL,
+  description TEXT NOT NULL,
+  requirements TEXT[] NOT NULL,
+  skills TEXT[] NOT NULL,
+  min_qualification VARCHAR(100) NOT NULL,
+  years_of_experience INTEGER NOT NULL,
+  posted_date TIMESTAMP NOT NULL,
+  closing_date TIMESTAMP NOT NULL,
+  featured BOOLEAN DEFAULT false,
+  logo VARCHAR(255),
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW(),
+  created_by UUID REFERENCES users(id)
+);
+
+-- Continue with all other tables...
+```
 
 3. **Insert initial admin user**:
-   ```sql
-   -- Using bcrypt hash for password 'kenyaDLC00'
-   INSERT INTO users (id, email, password, first_name, last_name, role, created_at, updated_at)
-   VALUES (
-     gen_random_uuid(),
-     'admin@example.com',
-     '$2a$10$gH7VuUP/gGqZEe5kJFLRROv4KGjgAkRwE23hHXgQVQoCiVEJvOveu',
-     'Admin',
-     'User',
-     'admin',
-     NOW(),
-     NOW()
-   );
-   ```
 
-## Transitioning Your Application to Use the Database
+```sql
+-- Using bcrypt hash for password 'kenyaDLC00'
+INSERT INTO users (id, email, password, first_name, last_name, role, created_at, updated_at)
+VALUES (
+  gen_random_uuid(),
+  'admin',
+  '$2a$10$gH7VuUP/gGqZEe5kJFLRROv4KGjgAkRwE23hHXgQVQoCiVEJvOveu',
+  'Admin',
+  'User',
+  'admin',
+  NOW(),
+  NOW()
+);
+```
 
-Once your database is set up, you need to modify your application to use it instead of localStorage:
+## Step 8: Update Your Frontend to Connect to the API
 
-1. **Create API endpoints** for your entities (jobs, candidates, applications, etc.)
-2. **Update frontend components** to fetch data from these endpoints
-3. **Implement authentication** using the database
+Once your backend is deployed and connected to the database, modify your frontend to use the API:
 
-### Backend Implementation Considerations
+1. **Create an API service**:
 
-When implementing your backend API:
+```typescript
+// src/services/api.ts
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
-1. **Use environment variables** for database connection:
-   ```typescript
-   // Example with Express and Prisma
-   import express from 'express';
-   import { PrismaClient } from '@prisma/client';
-   import bcrypt from 'bcrypt';
-   import jwt from 'jsonwebtoken';
+export const login = async (username: string, password: string) => {
+  const response = await fetch(`${API_URL}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password }),
+  });
 
-   const app = express();
-   const prisma = new PrismaClient();
-   
-   app.use(express.json());
-   
-   // Authentication endpoint
-   app.post('/api/login', async (req, res) => {
-     try {
-       const { username, password } = req.body;
-       
-       const user = await prisma.user.findUnique({
-         where: { email: username },
-       });
-       
-       if (!user) {
-         return res.status(401).json({ error: 'Invalid credentials' });
-       }
-       
-       const validPassword = await bcrypt.compare(password, user.password);
-       
-       if (!validPassword) {
-         return res.status(401).json({ error: 'Invalid credentials' });
-       }
-       
-       const token = jwt.sign(
-         { userId: user.id, role: user.role },
-         process.env.JWT_SECRET || 'your-secret-key',
-         { expiresIn: '8h' }
-       );
-       
-       res.json({ 
-         token, 
-         user: { 
-           id: user.id,
-           email: user.email,
-           firstName: user.firstName,
-           lastName: user.lastName,
-           role: user.role
-         } 
-       });
-     } catch (error) {
-       res.status(500).json({ error: 'Server error' });
-     }
-   });
-   
-   // Protected middleware
-   const authenticate = (req, res, next) => {
-     const token = req.headers.authorization?.split(' ')[1];
-     
-     if (!token) {
-       return res.status(401).json({ error: 'Authentication required' });
-     }
-     
-     try {
-       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-       req.user = decoded;
-       next();
-     } catch (error) {
-       res.status(401).json({ error: 'Invalid token' });
-     }
-   };
-   
-   // Example protected route
-   app.get('/api/jobs', authenticate, async (req, res) => {
-     try {
-       const jobs = await prisma.job.findMany();
-       res.json(jobs);
-     } catch (error) {
-       res.status(500).json({ error: 'Server error' });
-     }
-   });
-   
-   const PORT = process.env.PORT || 3000;
-   app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-   ```
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Login failed');
+  }
 
-2. **Implement proper error handling** for database operations
-3. **Use parameterized queries** to prevent SQL injection
-4. **Implement data validation** using libraries like zod or yup
+  return response.json();
+};
 
-## Deployment Best Practices with Coolify
+export const getJobs = async () => {
+  const token = localStorage.getItem('token');
+  
+  const response = await fetch(`${API_URL}/jobs`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
 
-1. **Use Docker Compose** for multi-container deployments
-2. **Set up proper database backups** in Coolify
-3. **Configure health checks** for your application
-4. **Set up monitoring** for your database and application
-5. **Implement CI/CD** for automated deployments
+  if (!response.ok) {
+    throw new Error('Failed to fetch jobs');
+  }
 
-## Security Considerations
+  return response.json();
+};
 
-1. **Enable PostgreSQL SSL connections** for secure communication
-2. **Implement proper authentication** using JWT or sessions
-3. **Use Row-Level Security (RLS)** in PostgreSQL for data access control
-4. **Encrypt sensitive data** in the database
-5. **Keep your database credentials secure** in Coolify environment variables
+// Add more API methods for other endpoints
+```
+
+2. **Update the login component**:
+
+```typescript
+// In AdminLogin.tsx
+import { login } from '../services/api';
+
+// Replace the handleLogin function:
+const handleLogin = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setIsLoading(true);
+  
+  try {
+    const data = await login(username, password);
+    
+    // Store token and user info
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('adminLoggedIn', 'true');
+    
+    toast({
+      title: "Login Successful",
+      description: "Welcome to the admin dashboard.",
+    });
+    navigate('/dashboard');
+  } catch (error) {
+    toast({
+      title: "Login Failed",
+      description: error instanceof Error ? error.message : "Invalid username or password.",
+      variant: "destructive",
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
+```
+
+## Step 9: Configure Networking and Security
+
+1. **Link the Frontend and Backend Services**:
+   - In Coolify, you can link services so they can communicate with each other
+   - Make sure the frontend can access the backend via the `/api` proxy route
+
+2. **Set Up SSL**:
+   - Coolify provides Let's Encrypt integration
+   - Configure SSL certificates for your domains
+
+3. **Security Headers**:
+   - Ensure proper security headers are in place (Coolify helps with this)
+
+## Step 10: Monitoring and Maintenance
+
+1. **Set Up Logging**:
+   - Configure logging for both frontend and backend
+   - Consider using a logging service for production
+
+2. **Database Backups**:
+   - Set up regular PostgreSQL backups in Coolify
+   - Test backup restoration process
+
+3. **Performance Monitoring**:
+   - Use Coolify's monitoring tools
+   - Consider additional APM tools if needed
 
 ## Troubleshooting Common Issues
 
-1. **Connection refused errors**: Check if database service is running and firewall settings
-2. **Authentication failures**: Verify database credentials in environment variables
-3. **Migration failures**: Check database schema compatibility
-4. **Performance issues**: Add proper indexes to frequently queried columns
+1. **Database Connection Failures**:
+   - Verify the database connection string
+   - Check network connectivity between services
+   - Ensure the database service is running
 
-By following this guide, you should be able to successfully set up and deploy your Talent ATS application with a PostgreSQL database using Coolify.
+2. **Authentication Issues**:
+   - Verify JWT secret is consistent
+   - Check token expiration settings
+   - Confirm user credentials in database
+
+3. **API Communication Problems**:
+   - Verify nginx configuration
+   - Check CORS settings
+   - Validate API endpoints and routes
+
+## Scaling Your Application
+
+As your Talent ATS grows, consider:
+
+1. **Horizontal Scaling**:
+   - Add more instances of your frontend and backend
+   - Configure load balancing
+
+2. **Database Optimization**:
+   - Add indexes for frequently accessed columns
+   - Optimize queries
+   - Consider read replicas for heavy workloads
+
+3. **Caching**:
+   - Implement Redis for caching
+   - Use browser caching for assets
+
+## Conclusion
+
+By following this guide, you'll have a fully functional Talent ATS application deployed on Coolify, connected to a PostgreSQL database. The system will be production-ready with authentication, API endpoints, and a proper database schema.
+
+Remember to keep your database credentials secure and regularly back up your data.

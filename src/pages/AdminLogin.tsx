@@ -24,18 +24,27 @@ export default function AdminLogin() {
     setIsLoading(true);
     
     try {
-      // This code will eventually be replaced with a real API call to authenticate
-      // against the PostgreSQL database
+      // This will be replaced with an actual API call to the backend
+      // when the PostgreSQL database is connected
       
-      // Temporary authentication logic while database is being set up
+      // For now, we'll use the hardcoded login while setting up the database
       if (username === 'admin' && password === 'kenyaDLC00') {
-        // Simulate API delay
+        // In production, this should be an API call like:
+        // const response = await fetch('/api/auth/login', {
+        //   method: 'POST',
+        //   headers: { 'Content-Type': 'application/json' },
+        //   body: JSON.stringify({ username, password }),
+        // });
+        // 
+        // if (!response.ok) throw new Error('Authentication failed');
+        // const data = await response.json();
+        
+        // Mock API delay
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // Store authentication state
+        // Store authentication state - in production this would use JWT tokens
         localStorage.setItem('adminLoggedIn', 'true');
         
-        // Notify user and redirect
         toast({
           title: "Login Successful",
           description: "Welcome to the admin dashboard.",
