@@ -23,9 +23,9 @@ services:
     environment:
       - PORT=3000
       - NODE_ENV=production
-      - DB_HOST=${DB_HOST:-ik08k80owwow04w4g80s0wss}
+      - DB_HOST=${DB_HOST:-localhost}
       - DB_PORT=${DB_PORT:-5432}
-      - DB_NAME=${DB_NAME:-postgres}
+      - DB_NAME=${DB_NAME:-ats_recruitment}
       - DB_USER=${DB_USER:-ats_admin}
       - DB_PASSWORD=${DB_PASSWORD:-situm@2014}
       - DB_SSL=${DB_SSL:-false}

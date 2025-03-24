@@ -1,4 +1,3 @@
-
 /**
  * Database Connection Configuration
  * This file manages the connection to the PostgreSQL database.
@@ -26,7 +25,7 @@ export const parseDatabaseUrl = (connectionString: string): DatabaseConfig => {
       database: url.pathname.replace('/', ''),
       user: url.username,
       password: url.password,
-      ssl: false // Set to true if your database requires SSL
+      ssl: url.searchParams.get('sslmode') === 'require'
     };
   } catch (error) {
     console.error('Failed to parse database connection string:', error);
@@ -34,30 +33,30 @@ export const parseDatabaseUrl = (connectionString: string): DatabaseConfig => {
   }
 };
 
-// Get database configuration from environment variable or fallback to default
+// Get database configuration from environment variable or fallback to local PostgreSQL
 const getDatabaseConfig = (): DatabaseConfig => {
-  const defaultConnectionString = 'postgres://ats_admin:situm@2014@ik08k80owwow04w4g80s0wss:5432/postgres';
-  const connectionString = process.env.DATABASE_URL || defaultConnectionString;
+  // If DATABASE_URL environment variable is set, use it
+  if (process.env.DATABASE_URL) {
+    return parseDatabaseUrl(process.env.DATABASE_URL);
+  }
   
-  return parseDatabaseUrl(connectionString);
+  // Otherwise use individual environment variables or fallback to defaults
+  return {
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT || '5432'),
+    database: process.env.DB_NAME || 'ats_recruitment',
+    user: process.env.DB_USER || 'ats_admin',
+    password: process.env.DB_PASSWORD || 'situm@2014',
+    ssl: process.env.DB_SSL === 'true'
+  };
 };
 
 // Export the database configuration
 export const dbConfig = getDatabaseConfig();
 
-// Example connection check function
+// Database connection check function
 export const checkDatabaseConnection = async (): Promise<boolean> => {
-  // This function should be implemented based on your database client
-  // For example if using 'pg' package:
-  
-  try {
-    // This is a placeholder - actual implementation would use your chosen database client
-    console.log('Checking database connection to:', dbConfig.host);
-    
-    // Return true if connection succeeds
-    return true;
-  } catch (error) {
-    console.error('Database connection failed:', error);
-    return false;
-  }
+  // This is a placeholder - the actual implementation will be done in server/index.js
+  console.log('Checking database connection to:', dbConfig.host);
+  return true;
 };

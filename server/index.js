@@ -14,15 +14,23 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Database connection configuration
+// Import database configuration from environment or use defaults
 const dbConfig = {
-  host: process.env.DB_HOST || 'ik08k80owwow04w4g80s0wss',
+  host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT || '5432'),
-  database: process.env.DB_NAME || 'postgres',
+  database: process.env.DB_NAME || 'ats_recruitment',
   user: process.env.DB_USER || 'ats_admin',
   password: process.env.DB_PASSWORD || 'situm@2014',
   ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false
 };
+
+console.log('Connecting to database:', {
+  host: dbConfig.host,
+  port: dbConfig.port,
+  database: dbConfig.database,
+  user: dbConfig.user,
+  ssl: dbConfig.ssl ? 'enabled' : 'disabled'
+});
 
 // Create PostgreSQL connection pool
 const pool = new Pool(dbConfig);
