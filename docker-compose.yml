@@ -1,0 +1,39 @@
+
+version: '3'
+
+services:
+  frontend:
+    image: ${FRONTEND_IMAGE:-nginx:alpine}
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./build:/usr/share/nginx/html
+    depends_on:
+      - backend
+    networks:
+      - ats-network
+
+  backend:
+    image: ${BACKEND_IMAGE:-node:18-alpine}
+    restart: unless-stopped
+    working_dir: /app
+    command: node server/index.js
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      - DB_HOST=${DB_HOST:-ik08k80owwow04w4g80s0wss}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_NAME=${DB_NAME:-postgres}
+      - DB_USER=${DB_USER:-ats_admin}
+      - DB_PASSWORD=${DB_PASSWORD:-situm@2014}
+      - DB_SSL=${DB_SSL:-false}
+    volumes:
+      - ./:/app
+    networks:
+      - ats-network
+
+networks:
+  ats-network:
+    driver: bridge

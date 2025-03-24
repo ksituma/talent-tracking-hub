@@ -1,0 +1,63 @@
+
+{
+  "name": "talent-ats",
+  "type": "application",
+  "services": {
+    "frontend": {
+      "dockerCompose": {
+        "service": "frontend"
+      },
+      "healthCheck": {
+        "path": "/health",
+        "port": 80
+      },
+      "environment": []
+    },
+    "backend": {
+      "dockerCompose": {
+        "service": "backend"
+      },
+      "healthCheck": {
+        "path": "/health",
+        "port": 3000
+      },
+      "environment": [
+        {
+          "name": "DB_HOST",
+          "value": "ik08k80owwow04w4g80s0wss"
+        },
+        {
+          "name": "DB_PORT",
+          "value": "5432"
+        },
+        {
+          "name": "DB_NAME",
+          "value": "postgres"
+        },
+        {
+          "name": "DB_USER",
+          "value": "ats_admin"
+        },
+        {
+          "name": "DB_PASSWORD",
+          "value": "situm@2014"
+        },
+        {
+          "name": "DB_SSL",
+          "value": "false"
+        }
+      ]
+    }
+  },
+  "database": {
+    "type": "postgresql",
+    "connection": {
+      "url": "postgres://ats_admin:situm@2014@ik08k80owwow04w4g80s0wss:5432/postgres",
+      "host": "ik08k80owwow04w4g80s0wss",
+      "port": 5432,
+      "name": "postgres",
+      "user": "ats_admin",
+      "password": "situm@2014"
+    }
+  }
+}
