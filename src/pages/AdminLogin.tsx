@@ -19,30 +19,39 @@ export default function AdminLogin() {
     return <Navigate to="/dashboard" replace />;
   }
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Updated admin authentication with new credentials
-    if (username === 'admin' && password === 'kenyaDLC00') {
-      setTimeout(() => {
+    try {
+      // This code will eventually be replaced with a real API call to authenticate
+      // against the PostgreSQL database
+      
+      // Temporary authentication logic while database is being set up
+      if (username === 'admin' && password === 'kenyaDLC00') {
+        // Simulate API delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Store authentication state
         localStorage.setItem('adminLoggedIn', 'true');
-        setIsLoading(false);
+        
+        // Notify user and redirect
         toast({
           title: "Login Successful",
           description: "Welcome to the admin dashboard.",
         });
         navigate('/dashboard');
-      }, 1000);
-    } else {
-      setTimeout(() => {
-        setIsLoading(false);
-        toast({
-          title: "Login Failed",
-          description: "Invalid username or password.",
-          variant: "destructive",
-        });
-      }, 1000);
+      } else {
+        throw new Error("Invalid credentials");
+      }
+    } catch (error) {
+      toast({
+        title: "Login Failed",
+        description: error instanceof Error ? error.message : "Invalid username or password.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
