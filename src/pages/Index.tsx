@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
@@ -9,7 +10,7 @@ import { Briefcase, MapPin, Clock, Calendar, ChevronRight, Search, ArrowRight, G
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 
-// Local storage key for managing jobs
+// Local storage key for fallback job data
 const JOBS_STORAGE_KEY = 'talent_ats_jobs';
 
 export default function Index() {
@@ -17,30 +18,92 @@ export default function Index() {
   const [jobs, setJobs] = useState([]);
   const [connectionStatus, setConnectionStatus] = useState<'loading' | 'success' | 'error'>('loading');
   
-  // Test Supabase connection
+  // Test Supabase connection and fetch jobs
   useEffect(() => {
-    const testConnection = async () => {
+    const fetchJobsAndTestConnection = async () => {
       try {
-        // Use a more reliable method to test connection - check if we can get the auth session
-        const { data, error } = await supabase.auth.getSession();
+        // Test connection by checking if we can get the auth session
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
         
-        if (error) {
-          console.error('Supabase connection error:', error);
+        if (sessionError) {
+          console.error('Supabase connection error:', sessionError);
           setConnectionStatus('error');
           toast({
             title: 'Database Connection Error',
             description: 'Could not connect to Supabase. Check console for details.',
             variant: 'destructive'
           });
-        } else {
-          console.log('Supabase connection successful');
-          setConnectionStatus('success');
-          toast({
-            title: 'Database Connection Successful',
-            description: 'Successfully connected to Supabase!',
-            variant: 'default'
-          });
+          
+          // Fall back to localStorage data
+          const savedJobs = localStorage.getItem(JOBS_STORAGE_KEY);
+          if (savedJobs) {
+            setJobs(JSON.parse(savedJobs));
+          }
+          return;
         }
+        
+        // Connection successful, now try to fetch jobs from the database
+        const { data: jobsData, error: jobsError } = await supabase
+          .from('jobs')
+          .select('*')
+          .order('postedDate', { ascending: false });
+          
+        if (jobsError) {
+          console.error('Error fetching jobs:', jobsError);
+          toast({
+            title: 'Error Fetching Jobs',
+            description: 'Could not fetch jobs from the database.',
+            variant: 'destructive'
+          });
+          
+          // Fall back to localStorage data
+          const savedJobs = localStorage.getItem(JOBS_STORAGE_KEY);
+          if (savedJobs) {
+            setJobs(JSON.parse(savedJobs));
+          }
+        } else {
+          console.log('Jobs fetched successfully:', jobsData);
+          
+          if (jobsData && jobsData.length > 0) {
+            setJobs(jobsData);
+          } else {
+            // If no jobs in database, fall back to localStorage
+            console.log('No jobs found in database, using localStorage data');
+            const savedJobs = localStorage.getItem(JOBS_STORAGE_KEY);
+            if (savedJobs) {
+              const localJobs = JSON.parse(savedJobs);
+              setJobs(localJobs);
+              
+              // Optionally: sync localStorage jobs to database
+              // This commented section could be uncommented if you want to automatically
+              // add the localStorage jobs to the database when none exist
+              /*
+              try {
+                for (const job of localJobs) {
+                  const { error } = await supabase.from('jobs').insert({
+                    ...job,
+                    postedDate: new Date(job.postedDate).toISOString(),
+                    closingDate: new Date(job.closingDate).toISOString(),
+                    requirements: job.requirements || [],
+                    skills: job.skills || []
+                  });
+                  if (error) console.error('Error syncing job to database:', error);
+                }
+                console.log('Jobs synced to database');
+              } catch (syncError) {
+                console.error('Error syncing jobs to database:', syncError);
+              }
+              */
+            }
+          }
+        }
+        
+        setConnectionStatus('success');
+        toast({
+          title: 'Database Connection Successful',
+          description: 'Successfully connected to Supabase!',
+          variant: 'default'
+        });
       } catch (error) {
         console.error('Supabase connection test failed:', error);
         setConnectionStatus('error');
@@ -49,18 +112,16 @@ export default function Index() {
           description: 'An unexpected error occurred testing the connection.',
           variant: 'destructive'
         });
+        
+        // Fall back to localStorage data
+        const savedJobs = localStorage.getItem(JOBS_STORAGE_KEY);
+        if (savedJobs) {
+          setJobs(JSON.parse(savedJobs));
+        }
       }
     };
 
-    testConnection();
-  }, []);
-  
-  // Load jobs from localStorage
-  useEffect(() => {
-    const savedJobs = localStorage.getItem(JOBS_STORAGE_KEY);
-    if (savedJobs) {
-      setJobs(JSON.parse(savedJobs));
-    }
+    fetchJobsAndTestConnection();
   }, []);
   
   const filteredJobs = jobs.filter(job => 

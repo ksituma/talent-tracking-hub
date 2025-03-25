@@ -9,7 +9,524 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      applications: {
+        Row: {
+          applicationdate: string
+          candidateid: string
+          id: string
+          jobid: string
+          notes: string | null
+          status: string
+          updatedat: string | null
+        }
+        Insert: {
+          applicationdate: string
+          candidateid: string
+          id?: string
+          jobid: string
+          notes?: string | null
+          status: string
+          updatedat?: string | null
+        }
+        Update: {
+          applicationdate?: string
+          candidateid?: string
+          id?: string
+          jobid?: string
+          notes?: string | null
+          status?: string
+          updatedat?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "applications_candidateid_fkey"
+            columns: ["candidateid"]
+            isOneToOne: false
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "applications_jobid_fkey"
+            columns: ["jobid"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      candidates: {
+        Row: {
+          address: string
+          coverletter: string | null
+          createdat: string | null
+          email: string
+          firstname: string
+          id: string
+          lastname: string
+          phone: string
+          resume: string
+          skills: string[] | null
+          updatedat: string | null
+        }
+        Insert: {
+          address: string
+          coverletter?: string | null
+          createdat?: string | null
+          email: string
+          firstname: string
+          id?: string
+          lastname: string
+          phone: string
+          resume: string
+          skills?: string[] | null
+          updatedat?: string | null
+        }
+        Update: {
+          address?: string
+          coverletter?: string | null
+          createdat?: string | null
+          email?: string
+          firstname?: string
+          id?: string
+          lastname?: string
+          phone?: string
+          resume?: string
+          skills?: string[] | null
+          updatedat?: string | null
+        }
+        Relationships: []
+      }
+      education: {
+        Row: {
+          candidateid: string
+          createdat: string | null
+          degree: string
+          enddate: string | null
+          fieldofstudy: string
+          grade: string | null
+          id: string
+          institution: string
+          startdate: string
+          updatedat: string | null
+        }
+        Insert: {
+          candidateid: string
+          createdat?: string | null
+          degree: string
+          enddate?: string | null
+          fieldofstudy: string
+          grade?: string | null
+          id?: string
+          institution: string
+          startdate: string
+          updatedat?: string | null
+        }
+        Update: {
+          candidateid?: string
+          createdat?: string | null
+          degree?: string
+          enddate?: string | null
+          fieldofstudy?: string
+          grade?: string | null
+          id?: string
+          institution?: string
+          startdate?: string
+          updatedat?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "education_candidateid_fkey"
+            columns: ["candidateid"]
+            isOneToOne: false
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      experience: {
+        Row: {
+          candidateid: string
+          company: string
+          createdat: string | null
+          description: string | null
+          enddate: string | null
+          id: string
+          location: string | null
+          position: string
+          startdate: string
+          updatedat: string | null
+        }
+        Insert: {
+          candidateid: string
+          company: string
+          createdat?: string | null
+          description?: string | null
+          enddate?: string | null
+          id?: string
+          location?: string | null
+          position: string
+          startdate: string
+          updatedat?: string | null
+        }
+        Update: {
+          candidateid?: string
+          company?: string
+          createdat?: string | null
+          description?: string | null
+          enddate?: string | null
+          id?: string
+          location?: string | null
+          position?: string
+          startdate?: string
+          updatedat?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "experience_candidateid_fkey"
+            columns: ["candidateid"]
+            isOneToOne: false
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      jobs: {
+        Row: {
+          closingdate: string
+          company: string
+          createdat: string | null
+          createdby: string | null
+          description: string
+          featured: boolean | null
+          id: string
+          location: string
+          logo: string | null
+          minqualification: string
+          posteddate: string
+          requirements: string[]
+          salary: string
+          skills: string[]
+          title: string
+          type: string
+          updatedat: string | null
+          yearsofexperience: number
+        }
+        Insert: {
+          closingdate: string
+          company: string
+          createdat?: string | null
+          createdby?: string | null
+          description: string
+          featured?: boolean | null
+          id?: string
+          location: string
+          logo?: string | null
+          minqualification: string
+          posteddate: string
+          requirements: string[]
+          salary: string
+          skills: string[]
+          title: string
+          type: string
+          updatedat?: string | null
+          yearsofexperience: number
+        }
+        Update: {
+          closingdate?: string
+          company?: string
+          createdat?: string | null
+          createdby?: string | null
+          description?: string
+          featured?: boolean | null
+          id?: string
+          location?: string
+          logo?: string | null
+          minqualification?: string
+          posteddate?: string
+          requirements?: string[]
+          salary?: string
+          skills?: string[]
+          title?: string
+          type?: string
+          updatedat?: string | null
+          yearsofexperience?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jobs_createdby_fkey"
+            columns: ["createdby"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      professional_bodies: {
+        Row: {
+          candidateid: string
+          createdat: string | null
+          expirydate: string | null
+          id: string
+          joindate: string
+          membershipnumber: string | null
+          name: string
+          updatedat: string | null
+        }
+        Insert: {
+          candidateid: string
+          createdat?: string | null
+          expirydate?: string | null
+          id?: string
+          joindate: string
+          membershipnumber?: string | null
+          name: string
+          updatedat?: string | null
+        }
+        Update: {
+          candidateid?: string
+          createdat?: string | null
+          expirydate?: string | null
+          id?: string
+          joindate?: string
+          membershipnumber?: string | null
+          name?: string
+          updatedat?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "professional_bodies_candidateid_fkey"
+            columns: ["candidateid"]
+            isOneToOne: false
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      publications: {
+        Row: {
+          candidateid: string
+          createdat: string | null
+          description: string | null
+          id: string
+          publicationdate: string
+          publisher: string
+          title: string
+          updatedat: string | null
+          url: string | null
+        }
+        Insert: {
+          candidateid: string
+          createdat?: string | null
+          description?: string | null
+          id?: string
+          publicationdate: string
+          publisher: string
+          title: string
+          updatedat?: string | null
+          url?: string | null
+        }
+        Update: {
+          candidateid?: string
+          createdat?: string | null
+          description?: string | null
+          id?: string
+          publicationdate?: string
+          publisher?: string
+          title?: string
+          updatedat?: string | null
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publications_candidateid_fkey"
+            columns: ["candidateid"]
+            isOneToOne: false
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referees: {
+        Row: {
+          candidateid: string
+          company: string
+          createdat: string | null
+          email: string
+          id: string
+          name: string
+          phone: string | null
+          position: string
+          relationship: string
+          updatedat: string | null
+        }
+        Insert: {
+          candidateid: string
+          company: string
+          createdat?: string | null
+          email: string
+          id?: string
+          name: string
+          phone?: string | null
+          position: string
+          relationship: string
+          updatedat?: string | null
+        }
+        Update: {
+          candidateid?: string
+          company?: string
+          createdat?: string | null
+          email?: string
+          id?: string
+          name?: string
+          phone?: string | null
+          position?: string
+          relationship?: string
+          updatedat?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referees_candidateid_fkey"
+            columns: ["candidateid"]
+            isOneToOne: false
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      short_courses: {
+        Row: {
+          candidateid: string
+          completiondate: string
+          createdat: string | null
+          credentialurl: string | null
+          expirydate: string | null
+          id: string
+          name: string
+          provider: string
+          updatedat: string | null
+        }
+        Insert: {
+          candidateid: string
+          completiondate: string
+          createdat?: string | null
+          credentialurl?: string | null
+          expirydate?: string | null
+          id?: string
+          name: string
+          provider: string
+          updatedat?: string | null
+        }
+        Update: {
+          candidateid?: string
+          completiondate?: string
+          createdat?: string | null
+          credentialurl?: string | null
+          expirydate?: string | null
+          id?: string
+          name?: string
+          provider?: string
+          updatedat?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "short_courses_candidateid_fkey"
+            columns: ["candidateid"]
+            isOneToOne: false
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shortlisting_criteria: {
+        Row: {
+          createdat: string | null
+          createdby: string
+          id: string
+          jobid: string
+          mineducationlevel: string
+          minyearsexperience: number
+          requiredskills: string[]
+          updatedat: string | null
+          weighteducation: number
+          weightexperience: number
+          weightskills: number
+        }
+        Insert: {
+          createdat?: string | null
+          createdby: string
+          id?: string
+          jobid: string
+          mineducationlevel: string
+          minyearsexperience: number
+          requiredskills: string[]
+          updatedat?: string | null
+          weighteducation: number
+          weightexperience: number
+          weightskills: number
+        }
+        Update: {
+          createdat?: string | null
+          createdby?: string
+          id?: string
+          jobid?: string
+          mineducationlevel?: string
+          minyearsexperience?: number
+          requiredskills?: string[]
+          updatedat?: string | null
+          weighteducation?: number
+          weightexperience?: number
+          weightskills?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shortlisting_criteria_createdby_fkey"
+            columns: ["createdby"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shortlisting_criteria_jobid_fkey"
+            columns: ["jobid"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      users: {
+        Row: {
+          createdat: string | null
+          email: string
+          firstname: string
+          id: string
+          lastname: string
+          password: string
+          role: string
+          updatedat: string | null
+        }
+        Insert: {
+          createdat?: string | null
+          email: string
+          firstname: string
+          id?: string
+          lastname: string
+          password: string
+          role: string
+          updatedat?: string | null
+        }
+        Update: {
+          createdat?: string | null
+          email?: string
+          firstname?: string
+          id?: string
+          lastname?: string
+          password?: string
+          role?: string
+          updatedat?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

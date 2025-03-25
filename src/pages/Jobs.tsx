@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,90 +20,19 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/components/ui/use-toast';
 import { Plus, Trash, Edit } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
-// Local storage key for managing jobs
+// Local storage key for fallback job data
 const JOBS_STORAGE_KEY = 'talent_ats_jobs';
 
-// Default jobs if none exist in storage
-const defaultJobs = [
-  {
-    id: 1,
-    title: 'Senior Software Engineer',
-    company: 'Tech Innovations Inc.',
-    location: 'New York, NY',
-    type: 'Full-time',
-    salary: '$120,000 - $150,000',
-    postedDate: '2023-06-15',
-    closingDate: '2023-07-15',
-    description: 'Looking for a senior software engineer with expertise in React, Node.js, and cloud technologies.',
-    requirements: ['5+ years of experience', 'React', 'Node.js', 'AWS', 'CI/CD'],
-    skills: ['JavaScript', 'TypeScript', 'React', 'Node.js', 'AWS'],
-    featured: true,
-    logo: '/lovable-uploads/c527b9f6-c10f-40f4-b84c-67261743d4c4.png',
-    yearsOfExperience: 5,
-    minQualification: 'Bachelor\'s Degree'
-  },
-  {
-    id: 2,
-    title: 'UI/UX Designer',
-    company: 'Creative Solutions',
-    location: 'Remote',
-    type: 'Contract',
-    salary: '$80,000 - $100,000',
-    postedDate: '2023-06-20',
-    closingDate: '2023-07-20',
-    description: 'Seeking a talented UI/UX designer to create beautiful, intuitive interfaces for our products.',
-    requirements: ['3+ years of experience', 'Figma', 'Adobe XD', 'User Research'],
-    skills: ['UI Design', 'UX Research', 'Figma', 'Adobe XD', 'Prototyping'],
-    featured: false,
-    yearsOfExperience: 3,
-    minQualification: 'Bachelor\'s Degree'
-  },
-  {
-    id: 3,
-    title: 'Data Scientist',
-    company: 'Analytics Pro',
-    location: 'San Francisco, CA',
-    type: 'Full-time',
-    salary: '$130,000 - $160,000',
-    postedDate: '2023-06-18',
-    closingDate: '2023-07-18',
-    description: 'Join our data science team to build machine learning models and analyze large datasets.',
-    requirements: ['Masters/PhD in relevant field', 'Python', 'Machine Learning', 'SQL'],
-    skills: ['Python', 'TensorFlow', 'SQL', 'Data Visualization', 'Machine Learning'],
-    featured: false,
-    yearsOfExperience: 4,
-    minQualification: 'Master\'s Degree'
-  },
-  {
-    id: 4,
-    title: 'Product Manager',
-    company: 'Product Visionaries',
-    location: 'Chicago, IL',
-    type: 'Full-time',
-    salary: '$110,000 - $140,000',
-    postedDate: '2023-06-22',
-    closingDate: '2023-07-22',
-    description: 'Lead product development initiatives from conception to launch.',
-    requirements: ['4+ years in product management', 'Agile methodologies', 'Technical background'],
-    skills: ['Product Strategy', 'User Stories', 'Roadmapping', 'Agile', 'Market Research'],
-    featured: true,
-    yearsOfExperience: 4,
-    minQualification: 'Bachelor\'s Degree'
-  },
-];
-
 export default function Jobs() {
-  // Initialize from localStorage or use defaultJobs
-  const [jobs, setJobs] = useState(() => {
-    const savedJobs = localStorage.getItem(JOBS_STORAGE_KEY);
-    return savedJobs ? JSON.parse(savedJobs) : defaultJobs;
-  });
-  
+  // Initialize state
+  const [jobs, setJobs] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [currentJob, setCurrentJob] = useState({
-    id: 0,
+    id: null,
     title: '',
     company: '',
     location: '',
@@ -119,16 +48,75 @@ export default function Jobs() {
     minQualification: 'Bachelor\'s Degree'
   });
 
-  // Save jobs to localStorage whenever they change
-  React.useEffect(() => {
-    localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(jobs));
+  // Fetch jobs from Supabase
+  useEffect(() => {
+    const fetchJobs = async () => {
+      setIsLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('jobs')
+          .select('*')
+          .order('postedDate', { ascending: false });
+          
+        if (error) {
+          console.error('Error fetching jobs:', error);
+          toast({
+            variant: "destructive",
+            title: "Failed to fetch jobs",
+            description: error.message
+          });
+          
+          // Fall back to localStorage if there's an error
+          const savedJobs = localStorage.getItem(JOBS_STORAGE_KEY);
+          if (savedJobs) {
+            setJobs(JSON.parse(savedJobs));
+          }
+        } else {
+          console.log('Jobs fetched successfully:', data);
+          
+          if (data && data.length > 0) {
+            setJobs(data);
+          } else {
+            // If no jobs in database, fall back to localStorage
+            const savedJobs = localStorage.getItem(JOBS_STORAGE_KEY);
+            if (savedJobs) {
+              setJobs(JSON.parse(savedJobs));
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Unexpected error:', error);
+        toast({
+          variant: "destructive",
+          title: "An unexpected error occurred",
+          description: "Could not fetch jobs"
+        });
+        
+        // Fall back to localStorage on unexpected errors
+        const savedJobs = localStorage.getItem(JOBS_STORAGE_KEY);
+        if (savedJobs) {
+          setJobs(JSON.parse(savedJobs));
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchJobs();
+  }, []);
+
+  // Save jobs to localStorage whenever they change (as a backup)
+  useEffect(() => {
+    if (jobs.length > 0) {
+      localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(jobs));
+    }
   }, [jobs]);
 
   const handleDialogClose = () => {
     setIsDialogOpen(false);
     setIsEditMode(false);
     setCurrentJob({
-      id: 0,
+      id: null,
       title: '',
       company: '',
       location: '',
@@ -178,28 +166,59 @@ export default function Jobs() {
   };
 
   const handleEditJob = (job) => {
-    setCurrentJob({
+    // Ensure dates are formatted correctly for the input fields
+    const formattedJob = {
       ...job,
+      postedDate: job.postedDate ? new Date(job.postedDate).toISOString().split('T')[0] : '',
+      closingDate: job.closingDate ? new Date(job.closingDate).toISOString().split('T')[0] : '',
       requirements: job.requirements || [],
       skills: job.skills || [],
       yearsOfExperience: job.yearsOfExperience || 0,
       minQualification: job.minQualification || 'Bachelor\'s Degree'
-    });
+    };
+    
+    setCurrentJob(formattedJob);
     setIsEditMode(true);
     setIsDialogOpen(true);
   };
 
-  const handleDeleteJob = (jobId) => {
+  const handleDeleteJob = async (jobId) => {
     if (window.confirm('Are you sure you want to delete this job?')) {
-      setJobs(jobs.filter(job => job.id !== jobId));
-      toast({
-        title: "Job deleted",
-        description: "The job posting has been successfully deleted."
-      });
+      try {
+        const { error } = await supabase
+          .from('jobs')
+          .delete()
+          .eq('id', jobId);
+          
+        if (error) {
+          console.error('Error deleting job:', error);
+          toast({
+            variant: "destructive",
+            title: "Failed to delete job",
+            description: error.message
+          });
+          return;
+        }
+        
+        // Update local state after successful deletion
+        setJobs(jobs.filter(job => job.id !== jobId));
+        
+        toast({
+          title: "Job deleted",
+          description: "The job posting has been successfully deleted."
+        });
+      } catch (error) {
+        console.error('Unexpected error deleting job:', error);
+        toast({
+          variant: "destructive",
+          title: "An unexpected error occurred",
+          description: "Could not delete the job"
+        });
+      }
     }
   };
 
-  const handleSaveJob = () => {
+  const handleSaveJob = async () => {
     if (!currentJob.title || !currentJob.company || !currentJob.description) {
       toast({
         variant: "destructive",
@@ -209,30 +228,99 @@ export default function Jobs() {
       return;
     }
 
-    if (isEditMode) {
-      // Update existing job
-      setJobs(jobs.map(job => 
-        job.id === currentJob.id ? { ...currentJob } : job
-      ));
+    try {
+      if (isEditMode) {
+        // Update existing job
+        const { error } = await supabase
+          .from('jobs')
+          .update({
+            title: currentJob.title,
+            company: currentJob.company,
+            location: currentJob.location,
+            type: currentJob.type,
+            salary: currentJob.salary,
+            description: currentJob.description,
+            requirements: currentJob.requirements,
+            skills: currentJob.skills,
+            minQualification: currentJob.minQualification,
+            yearsOfExperience: currentJob.yearsOfExperience,
+            closingDate: currentJob.closingDate,
+            featured: currentJob.featured,
+            updatedAt: new Date().toISOString()
+          })
+          .eq('id', currentJob.id);
+          
+        if (error) {
+          console.error('Error updating job:', error);
+          toast({
+            variant: "destructive",
+            title: "Failed to update job",
+            description: error.message
+          });
+          return;
+        }
+        
+        // Update local state
+        setJobs(jobs.map(job => 
+          job.id === currentJob.id ? { ...job, ...currentJob } : job
+        ));
+        
+        toast({
+          title: "Job updated",
+          description: "The job posting has been successfully updated."
+        });
+      } else {
+        // Add new job
+        const newJob = {
+          title: currentJob.title,
+          company: currentJob.company,
+          location: currentJob.location,
+          type: currentJob.type,
+          salary: currentJob.salary,
+          description: currentJob.description,
+          requirements: currentJob.requirements,
+          skills: currentJob.skills,
+          minQualification: currentJob.minQualification,
+          yearsOfExperience: currentJob.yearsOfExperience,
+          postedDate: new Date().toISOString(),
+          closingDate: currentJob.closingDate ? new Date(currentJob.closingDate).toISOString() : null,
+          featured: currentJob.featured
+        };
+        
+        const { data, error } = await supabase
+          .from('jobs')
+          .insert(newJob)
+          .select();
+          
+        if (error) {
+          console.error('Error adding job:', error);
+          toast({
+            variant: "destructive",
+            title: "Failed to add job",
+            description: error.message
+          });
+          return;
+        }
+        
+        // Update local state with the newly created job
+        setJobs([data[0], ...jobs]);
+        
+        toast({
+          title: "Job added",
+          description: "New job posting has been successfully added."
+        });
+      }
+      
+      // Close the dialog
+      handleDialogClose();
+    } catch (error) {
+      console.error('Unexpected error saving job:', error);
       toast({
-        title: "Job updated",
-        description: "The job posting has been successfully updated."
-      });
-    } else {
-      // Add new job
-      const newJob = {
-        ...currentJob,
-        id: Math.max(0, ...jobs.map(job => job.id)) + 1,
-        postedDate: new Date().toISOString().split('T')[0]
-      };
-      setJobs([...jobs, newJob]);
-      toast({
-        title: "Job added",
-        description: "New job posting has been successfully added."
+        variant: "destructive",
+        title: "An unexpected error occurred",
+        description: "Could not save the job"
       });
     }
-    
-    handleDialogClose();
   };
 
   return (
