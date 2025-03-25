@@ -39,9 +39,33 @@ su - postgres -c "psql -c \"CREATE DATABASE ats_recruitment;\""
 su - postgres -c "psql -c \"ALTER USER ats_admin WITH SUPERUSER;\""
 su - postgres -c "psql -c \"GRANT ALL PRIVILEGES ON DATABASE ats_recruitment TO ats_admin;\""
 
-# Create tables from SQL file
+# Create application directory
+APP_DIR="/var/www/talent-ats"
+log "Creating application directory at $APP_DIR"
+mkdir -p $APP_DIR
+cd $APP_DIR
+
+# Clone application repository (uncomment and modify this line with your actual repo)
+log "Cloning application repository"
+# git clone https://github.com/your-username/talent-ats.git .
+
+# If the repository has already been cloned or files are deployed by other means
+# Copy db-init.sql to a temporary location to ensure it exists for the next step
+if [ -f "$APP_DIR/scripts/db-init.sql" ]; then
+  cp "$APP_DIR/scripts/db-init.sql" /tmp/db-init.sql
+  log "Copied database initialization script to /tmp/db-init.sql"
+else
+  log "Warning: Database initialization script not found. Database schema will not be initialized automatically."
+fi
+
+# Create tables from SQL file if it exists
 log "Initializing database schema"
-su - postgres -c "psql -d ats_recruitment -f /var/www/ats-recruitment/scripts/db-init.sql"
+if [ -f "/tmp/db-init.sql" ]; then
+  su - postgres -c "psql -d ats_recruitment -f /tmp/db-init.sql"
+  log "Database schema initialized successfully"
+else
+  log "Skipping schema initialization. You'll need to manually import the schema later."
+fi
 
 log "Configuring firewall"
 ufw allow 22/tcp      # SSH
@@ -49,17 +73,15 @@ ufw allow 80/tcp      # HTTP
 ufw allow 443/tcp     # HTTPS
 ufw --force enable
 
-log "Cloning application repository"
-# Create app directory
-mkdir -p /var/www/talent-ats
-cd /var/www/talent-ats
-
-# You can replace this with your actual repository URL
-# git clone https://github.com/your-username/talent-ats.git .
-
 log "Installing application dependencies"
-npm install
-npm run build
+if [ -f "$APP_DIR/package.json" ]; then
+  cd $APP_DIR
+  npm install
+  npm run build
+  log "Application built successfully"
+else
+  log "Warning: package.json not found. Skipping npm install and build."
+fi
 
 log "Setting up Nginx"
 cat > /etc/nginx/sites-available/talent-ats << 'EOF'
@@ -104,7 +126,7 @@ systemctl restart nginx
 systemctl enable nginx
 
 log "Setting up PM2 for the Node.js backend"
-cat > /var/www/talent-ats/ecosystem.config.js << EOF
+cat > $APP_DIR/ecosystem.config.js << EOF
 module.exports = {
   apps: [{
     name: 'talent-ats-backend',
@@ -127,10 +149,16 @@ module.exports = {
 };
 EOF
 
-cd /var/www/talent-ats
-pm2 start ecosystem.config.js
-pm2 save
-pm2 startup systemd
+cd $APP_DIR
+if [ -f "$APP_DIR/server/index.js" ]; then
+  pm2 start ecosystem.config.js
+  pm2 save
+  pm2 startup systemd
+  log "PM2 started and configured to start on boot"
+else
+  log "Warning: server/index.js not found. PM2 service not started."
+fi
 
 log "Setup complete! Your Talent ATS application should now be running."
 log "Access your application at http://your_server_ip"
+log "For detailed information on deploying with Coolify, see: /var/www/talent-ats/src/utils/coolify-deployment-guide.md"
