@@ -41,7 +41,7 @@ su - postgres -c "psql -c \"GRANT ALL PRIVILEGES ON DATABASE ats_recruitment TO 
 
 # Create tables from SQL file
 log "Initializing database schema"
-su - postgres -c "psql -d ats_recruitment -f /tmp/db-init.sql"
+su - postgres -c "psql -d ats_recruitment -f /scripts/db-init.sql"
 
 log "Configuring firewall"
 ufw allow 22/tcp      # SSH
