@@ -7,6 +7,7 @@
 const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
+const path = require('path');
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -51,7 +52,12 @@ app.get('/health', async (req, res) => {
     res.json({
       status: 'ok',
       database: 'connected',
-      timestamp: result.rows[0].now
+      timestamp: result.rows[0].now,
+      config: {
+        host: dbConfig.host,
+        database: dbConfig.database,
+        ssl: dbConfig.ssl ? 'enabled' : 'disabled'
+      }
     });
   } catch (error) {
     console.error('Health check failed:', error);
@@ -68,11 +74,9 @@ app.post('/auth/login', async (req, res) => {
   const { username, password } = req.body;
 
   try {
-    // TODO: Replace with your actual authentication logic
-    // This is just a placeholder - you should implement proper credential checking
     const result = await pool.query(
-      'SELECT * FROM users WHERE username = $1',
-      [username]
+      'SELECT id, email, "firstName", "lastName", role FROM users WHERE email = $1 AND password = $2',
+      [username, password]
     );
 
     if (result.rows.length === 0) {
@@ -81,30 +85,48 @@ app.post('/auth/login', async (req, res) => {
 
     const user = result.rows[0];
     
-    // Note: In production, you should use bcrypt or similar for password comparison
-    if (password !== user.password) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
-    // Success - send back a token
+    // Success - send back user data
     res.json({
       token: 'sample-jwt-token',
       user: {
         id: user.id,
-        username: user.username,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
         role: user.role
       }
     });
   } catch (error) {
     console.error('Login error:', error);
+    res.status(500).json({ error: 'Server error', details: error.message });
+  }
+});
+
+// API routes for jobs
+app.get('/jobs', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM jobs ORDER BY "postedDate" DESC');
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching jobs:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
 
+// Serve static assets in production
+if (process.env.NODE_ENV === 'production') {
+  // Set static folder
+  app.use(express.static(path.join(__dirname, '../build')));
+
+  app.get('*', (req, res) => {
+    res.sendFile(path.resolve(__dirname, '../build', 'index.html'));
+  });
+}
+
 // Generic error handling
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ error: 'Something went wrong!' });
+  res.status(500).json({ error: 'Something went wrong!', details: err.message });
 });
 
 // Start the server

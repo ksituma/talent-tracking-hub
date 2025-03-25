@@ -1,3 +1,4 @@
+
 /**
  * Database Connection Configuration
  * This file manages the connection to the PostgreSQL database.
@@ -10,7 +11,7 @@ interface DatabaseConfig {
   database: string;
   user: string;
   password: string;
-  ssl?: boolean;
+  ssl?: boolean | object;
 }
 
 // Parse connection string into config object
@@ -19,13 +20,18 @@ export const parseDatabaseUrl = (connectionString: string): DatabaseConfig => {
     // Expected format: postgres://username:password@host:port/database
     const url = new URL(connectionString);
     
+    const sslMode = url.searchParams.get('sslmode');
+    const ssl = sslMode === 'require' ? 
+      { rejectUnauthorized: false } : 
+      (sslMode === 'true' ? true : false);
+    
     return {
       host: url.hostname,
       port: parseInt(url.port || '5432'),
-      database: url.pathname.replace('/', ''),
+      database: url.pathname.replace(/^\//, ''),
       user: url.username,
       password: url.password,
-      ssl: url.searchParams.get('sslmode') === 'require'
+      ssl
     };
   } catch (error) {
     console.error('Failed to parse database connection string:', error);
@@ -47,7 +53,7 @@ const getDatabaseConfig = (): DatabaseConfig => {
     database: process.env.DB_NAME || 'ats_recruitment',
     user: process.env.DB_USER || 'ats_admin',
     password: process.env.DB_PASSWORD || 'situm@2014',
-    ssl: process.env.DB_SSL === 'true'
+    ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false
   };
 };
 
@@ -56,7 +62,7 @@ export const dbConfig = getDatabaseConfig();
 
 // Database connection check function
 export const checkDatabaseConnection = async (): Promise<boolean> => {
-  // This is a placeholder - the actual implementation will be done in server/index.js
+  // Placeholder - actual implementation in server/index.js
   console.log('Checking database connection to:', dbConfig.host);
   return true;
 };
