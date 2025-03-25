@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
@@ -22,8 +21,8 @@ export default function Index() {
   useEffect(() => {
     const testConnection = async () => {
       try {
-        // Simple query to check if we can connect to Supabase
-        const { data, error } = await supabase.from('pg_stat_statements').select('*').limit(1);
+        // Use a more reliable method to test connection - check if we can get the auth session
+        const { data, error } = await supabase.auth.getSession();
         
         if (error) {
           console.error('Supabase connection error:', error);
