@@ -6,7 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Briefcase, MapPin, Clock, Calendar, ChevronRight, Search, ArrowRight, GraduationCap, Clock1 } from 'lucide-react';
+import { Briefcase, MapPin, Clock, Calendar, ChevronRight, Search, ArrowRight, GraduationCap, Clock1, Check, AlertCircle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/components/ui/use-toast';
 
 // Local storage key for managing jobs
 const JOBS_STORAGE_KEY = 'talent_ats_jobs';
@@ -14,6 +16,45 @@ const JOBS_STORAGE_KEY = 'talent_ats_jobs';
 export default function Index() {
   const [searchTerm, setSearchTerm] = useState('');
   const [jobs, setJobs] = useState([]);
+  const [connectionStatus, setConnectionStatus] = useState<'loading' | 'success' | 'error'>('loading');
+  
+  // Test Supabase connection
+  useEffect(() => {
+    const testConnection = async () => {
+      try {
+        // Simple query to check if we can connect to Supabase
+        const { data, error } = await supabase.from('pg_stat_statements').select('*').limit(1);
+        
+        if (error) {
+          console.error('Supabase connection error:', error);
+          setConnectionStatus('error');
+          toast({
+            title: 'Database Connection Error',
+            description: 'Could not connect to Supabase. Check console for details.',
+            variant: 'destructive'
+          });
+        } else {
+          console.log('Supabase connection successful');
+          setConnectionStatus('success');
+          toast({
+            title: 'Database Connection Successful',
+            description: 'Successfully connected to Supabase!',
+            variant: 'default'
+          });
+        }
+      } catch (error) {
+        console.error('Supabase connection test failed:', error);
+        setConnectionStatus('error');
+        toast({
+          title: 'Database Connection Test Failed',
+          description: 'An unexpected error occurred testing the connection.',
+          variant: 'destructive'
+        });
+      }
+    };
+
+    testConnection();
+  }, []);
   
   // Load jobs from localStorage
   useEffect(() => {
@@ -36,6 +77,27 @@ export default function Index() {
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-4xl font-bold mb-4">Find Your Dream Job</h1>
             <p className="text-lg text-blue-100 mb-6">Discover opportunities that match your skills and career goals</p>
+            
+            {/* Supabase Connection Status */}
+            <div className="mb-4 flex items-center justify-center gap-2">
+              <span className="text-sm">Supabase Connection:</span>
+              {connectionStatus === 'loading' && (
+                <Badge variant="outline" className="bg-yellow-500/20 text-yellow-200">
+                  <span className="animate-pulse mr-1">●</span> Testing...
+                </Badge>
+              )}
+              {connectionStatus === 'success' && (
+                <Badge variant="outline" className="bg-green-500/20 text-green-200">
+                  <Check className="h-3 w-3 mr-1" /> Connected
+                </Badge>
+              )}
+              {connectionStatus === 'error' && (
+                <Badge variant="outline" className="bg-red-500/20 text-red-200">
+                  <AlertCircle className="h-3 w-3 mr-1" /> Error
+                </Badge>
+              )}
+            </div>
+            
             <div className="relative max-w-2xl mx-auto">
               <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
               <Input
