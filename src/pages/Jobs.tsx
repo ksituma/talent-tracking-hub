@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
 import { Button } from '@/components/ui/button';
@@ -20,13 +19,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/components/ui/use-toast';
 import { Plus, Trash, Edit } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { createJob, fetchJobs, updateJob, deleteJob } from '@/utils/supabase-utils';
 
-// Local storage key for fallback job data
 const JOBS_STORAGE_KEY = 'talent_ats_jobs';
 
 export default function Jobs() {
-  // Initialize state
   const [jobs, setJobs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -48,51 +45,30 @@ export default function Jobs() {
     minQualification: 'Bachelor\'s Degree'
   });
 
-  // Fetch jobs from Supabase
   useEffect(() => {
-    const fetchJobs = async () => {
+    const loadJobs = async () => {
       setIsLoading(true);
       try {
-        const { data, error } = await supabase
-          .from('jobs')
-          .select('*')
-          .order('postedDate', { ascending: false });
-          
-        if (error) {
-          console.error('Error fetching jobs:', error);
-          toast({
-            variant: "destructive",
-            title: "Failed to fetch jobs",
-            description: error.message
-          });
-          
-          // Fall back to localStorage if there's an error
+        const jobsData = await fetchJobs();
+        console.log('Jobs fetched successfully:', jobsData);
+        
+        if (jobsData && jobsData.length > 0) {
+          setJobs(jobsData);
+          localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(jobsData));
+        } else {
           const savedJobs = localStorage.getItem(JOBS_STORAGE_KEY);
           if (savedJobs) {
             setJobs(JSON.parse(savedJobs));
           }
-        } else {
-          console.log('Jobs fetched successfully:', data);
-          
-          if (data && data.length > 0) {
-            setJobs(data);
-          } else {
-            // If no jobs in database, fall back to localStorage
-            const savedJobs = localStorage.getItem(JOBS_STORAGE_KEY);
-            if (savedJobs) {
-              setJobs(JSON.parse(savedJobs));
-            }
-          }
         }
       } catch (error) {
-        console.error('Unexpected error:', error);
+        console.error('Error fetching jobs:', error);
         toast({
           variant: "destructive",
-          title: "An unexpected error occurred",
-          description: "Could not fetch jobs"
+          title: "Failed to fetch jobs",
+          description: error.message
         });
         
-        // Fall back to localStorage on unexpected errors
         const savedJobs = localStorage.getItem(JOBS_STORAGE_KEY);
         if (savedJobs) {
           setJobs(JSON.parse(savedJobs));
@@ -102,10 +78,9 @@ export default function Jobs() {
       }
     };
 
-    fetchJobs();
+    loadJobs();
   }, []);
 
-  // Save jobs to localStorage whenever they change (as a backup)
   useEffect(() => {
     if (jobs.length > 0) {
       localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(jobs));
@@ -166,7 +141,6 @@ export default function Jobs() {
   };
 
   const handleEditJob = (job) => {
-    // Ensure dates are formatted correctly for the input fields
     const formattedJob = {
       ...job,
       postedDate: job.postedDate ? new Date(job.postedDate).toISOString().split('T')[0] : '',
@@ -185,22 +159,8 @@ export default function Jobs() {
   const handleDeleteJob = async (jobId) => {
     if (window.confirm('Are you sure you want to delete this job?')) {
       try {
-        const { error } = await supabase
-          .from('jobs')
-          .delete()
-          .eq('id', jobId);
-          
-        if (error) {
-          console.error('Error deleting job:', error);
-          toast({
-            variant: "destructive",
-            title: "Failed to delete job",
-            description: error.message
-          });
-          return;
-        }
+        await deleteJob(jobId);
         
-        // Update local state after successful deletion
         setJobs(jobs.filter(job => job.id !== jobId));
         
         toast({
@@ -208,11 +168,11 @@ export default function Jobs() {
           description: "The job posting has been successfully deleted."
         });
       } catch (error) {
-        console.error('Unexpected error deleting job:', error);
+        console.error('Error deleting job:', error);
         toast({
           variant: "destructive",
-          title: "An unexpected error occurred",
-          description: "Could not delete the job"
+          title: "Failed to delete job",
+          description: error.message
         });
       }
     }
@@ -230,39 +190,10 @@ export default function Jobs() {
 
     try {
       if (isEditMode) {
-        // Update existing job
-        const { error } = await supabase
-          .from('jobs')
-          .update({
-            title: currentJob.title,
-            company: currentJob.company,
-            location: currentJob.location,
-            type: currentJob.type,
-            salary: currentJob.salary,
-            description: currentJob.description,
-            requirements: currentJob.requirements,
-            skills: currentJob.skills,
-            minQualification: currentJob.minQualification,
-            yearsOfExperience: currentJob.yearsOfExperience,
-            closingDate: currentJob.closingDate,
-            featured: currentJob.featured,
-            updatedAt: new Date().toISOString()
-          })
-          .eq('id', currentJob.id);
-          
-        if (error) {
-          console.error('Error updating job:', error);
-          toast({
-            variant: "destructive",
-            title: "Failed to update job",
-            description: error.message
-          });
-          return;
-        }
+        const updatedJob = await updateJob(currentJob.id, currentJob);
         
-        // Update local state
         setJobs(jobs.map(job => 
-          job.id === currentJob.id ? { ...job, ...currentJob } : job
+          job.id === currentJob.id ? updatedJob : job
         ));
         
         toast({
@@ -270,40 +201,15 @@ export default function Jobs() {
           description: "The job posting has been successfully updated."
         });
       } else {
-        // Add new job
-        const newJob = {
-          title: currentJob.title,
-          company: currentJob.company,
-          location: currentJob.location,
-          type: currentJob.type,
-          salary: currentJob.salary,
-          description: currentJob.description,
-          requirements: currentJob.requirements,
-          skills: currentJob.skills,
-          minQualification: currentJob.minQualification,
-          yearsOfExperience: currentJob.yearsOfExperience,
+        const jobToCreate = {
+          ...currentJob,
           postedDate: new Date().toISOString(),
-          closingDate: currentJob.closingDate ? new Date(currentJob.closingDate).toISOString() : null,
-          featured: currentJob.featured
+          closingDate: currentJob.closingDate ? new Date(currentJob.closingDate).toISOString() : null
         };
         
-        const { data, error } = await supabase
-          .from('jobs')
-          .insert(newJob)
-          .select();
-          
-        if (error) {
-          console.error('Error adding job:', error);
-          toast({
-            variant: "destructive",
-            title: "Failed to add job",
-            description: error.message
-          });
-          return;
-        }
+        const newJob = await createJob(jobToCreate);
         
-        // Update local state with the newly created job
-        setJobs([data[0], ...jobs]);
+        setJobs([newJob, ...jobs]);
         
         toast({
           title: "Job added",
@@ -311,14 +217,13 @@ export default function Jobs() {
         });
       }
       
-      // Close the dialog
       handleDialogClose();
     } catch (error) {
-      console.error('Unexpected error saving job:', error);
+      console.error('Error saving job:', error);
       toast({
         variant: "destructive",
-        title: "An unexpected error occurred",
-        description: "Could not save the job"
+        title: "Failed to save job",
+        description: error.message || "An unexpected error occurred"
       });
     }
   };
@@ -336,7 +241,7 @@ export default function Jobs() {
               <Button className="flex items-center gap-2" onClick={() => {
                 setIsEditMode(false);
                 setCurrentJob({
-                  id: 0,
+                  id: null,
                   title: '',
                   company: '',
                   location: '',

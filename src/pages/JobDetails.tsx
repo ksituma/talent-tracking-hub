@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
@@ -7,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, Briefcase, MapPin, Calendar, Clock, GraduationCap, Clock1, ArrowRight } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { fetchJobById } from '@/utils/supabase-utils';
 
 // Local storage key for fallback job data
 const JOBS_STORAGE_KEY = 'talent_ats_jobs';
@@ -18,45 +17,31 @@ export default function JobDetails() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchJob = async () => {
+    const loadJob = async () => {
       setLoading(true);
       
       try {
         // Try to fetch the job from Supabase first
-        const { data, error } = await supabase
-          .from('jobs')
-          .select('*')
-          .eq('id', id)
-          .single();
+        const jobData = await fetchJobById(id);
         
-        if (error) {
-          console.error('Error fetching job from Supabase:', error);
-          
-          // Fall back to localStorage
-          const savedJobs = JSON.parse(localStorage.getItem(JOBS_STORAGE_KEY) || '[]');
-          const foundJob = savedJobs.find(job => job.id === parseInt(id));
-          
-          if (foundJob) {
-            setJob(foundJob);
-          }
-        } else if (data) {
-          console.log('Job fetched from Supabase:', data);
-          setJob(data);
+        if (jobData) {
+          console.log('Job fetched from Supabase:', jobData);
+          setJob(jobData);
         } else {
-          // If no job found in Supabase, try localStorage
+          // Fall back to localStorage if no job found
           const savedJobs = JSON.parse(localStorage.getItem(JOBS_STORAGE_KEY) || '[]');
-          const foundJob = savedJobs.find(job => job.id === parseInt(id));
+          const foundJob = savedJobs.find(job => job.id === id);
           
           if (foundJob) {
             setJob(foundJob);
           }
         }
       } catch (error) {
-        console.error('Unexpected error fetching job:', error);
+        console.error('Error fetching job:', error);
         
         // Fall back to localStorage on error
         const savedJobs = JSON.parse(localStorage.getItem(JOBS_STORAGE_KEY) || '[]');
-        const foundJob = savedJobs.find(job => job.id === parseInt(id));
+        const foundJob = savedJobs.find(job => job.id === id);
         
         if (foundJob) {
           setJob(foundJob);
@@ -66,7 +51,7 @@ export default function JobDetails() {
       }
     };
 
-    fetchJob();
+    loadJob();
   }, [id]);
 
   if (loading) {
