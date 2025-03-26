@@ -113,6 +113,99 @@ app.get('/jobs', async (req, res) => {
   }
 });
 
+// API routes for settings
+app.get('/settings', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM settings LIMIT 1');
+    if (result.rows.length === 0) {
+      return res.json(null);
+    }
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error fetching settings:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.post('/settings', async (req, res) => {
+  try {
+    const {
+      company_name,
+      system_email,
+      timezone,
+      date_format,
+      email_notifications,
+      new_application_alerts,
+      job_posting_expiry_alerts,
+      min_years_experience,
+      min_qualification,
+      skill_match_threshold,
+      automatic_shortlisting
+    } = req.body;
+
+    // Check if settings already exist
+    const checkResult = await pool.query('SELECT id FROM settings LIMIT 1');
+    
+    let result;
+    if (checkResult.rows.length > 0) {
+      // Update existing settings
+      result = await pool.query(
+        `UPDATE settings 
+         SET company_name = $1, system_email = $2, timezone = $3, date_format = $4,
+             email_notifications = $5, new_application_alerts = $6, job_posting_expiry_alerts = $7,
+             min_years_experience = $8, min_qualification = $9, skill_match_threshold = $10,
+             automatic_shortlisting = $11, updated_at = NOW()
+         WHERE id = $12
+         RETURNING *`,
+        [
+          company_name, system_email, timezone, date_format,
+          email_notifications, new_application_alerts, job_posting_expiry_alerts,
+          min_years_experience, min_qualification, skill_match_threshold,
+          automatic_shortlisting, checkResult.rows[0].id
+        ]
+      );
+    } else {
+      // Insert new settings
+      result = await pool.query(
+        `INSERT INTO settings 
+         (company_name, system_email, timezone, date_format,
+          email_notifications, new_application_alerts, job_posting_expiry_alerts,
+          min_years_experience, min_qualification, skill_match_threshold, 
+          automatic_shortlisting)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+         RETURNING *`,
+        [
+          company_name, system_email, timezone, date_format,
+          email_notifications, new_application_alerts, job_posting_expiry_alerts,
+          min_years_experience, min_qualification, skill_match_threshold,
+          automatic_shortlisting
+        ]
+      );
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error saving settings:', error);
+    res.status(500).json({ error: 'Server error', details: error.message });
+  }
+});
+
+// API route for sending emails
+app.post('/api/send-email', async (req, res) => {
+  try {
+    const { to, subject, html, text } = req.body;
+    
+    // In a real implementation, you would use a library like nodemailer to send emails
+    // For now, we'll just log the email
+    console.log('Email sent:', { to, subject });
+    
+    res.json({ success: true, message: 'Email sent (simulated)' });
+  } catch (error) {
+    console.error('Error sending email:', error);
+    res.status(500).json({ error: 'Server error', details: error.message });
+  }
+});
+
 // Serve static assets in production
 if (process.env.NODE_ENV === 'production') {
   // Set static folder

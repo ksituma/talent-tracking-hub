@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Briefcase, Lock, User, Database, CheckCircle2, XCircle } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function AdminLogin() {
   const [username, setUsername] = useState('');
@@ -23,20 +24,33 @@ export default function AdminLogin() {
   const checkDatabaseConnection = async () => {
     setDbStatus('checking');
     try {
-      const response = await fetch('/health');
-      if (response.ok) {
-        const data = await response.json();
-        if (data.database === 'connected') {
-          setDbStatus('connected');
+      // Try Supabase connection
+      const { data, error } = await supabase.from('jobs').select('count').limit(1);
+      if (error) {
+        console.error('Supabase connection error:', error);
+        throw error;
+      }
+      setDbStatus('connected');
+    } catch (error) {
+      console.error('Database connection check failed:', error);
+      
+      // Try fallback to health API
+      try {
+        const response = await fetch('/health');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.database === 'connected') {
+            setDbStatus('connected');
+          } else {
+            setDbStatus('error');
+          }
         } else {
           setDbStatus('error');
         }
-      } else {
+      } catch (fallbackError) {
         setDbStatus('error');
+        console.error('Fallback check failed:', fallbackError);
       }
-    } catch (error) {
-      setDbStatus('error');
-      console.error('Database connection check failed:', error);
     }
   };
 
@@ -51,10 +65,39 @@ export default function AdminLogin() {
     setIsLoading(true);
     
     try {
-      // Check if we're using the API or the hardcoded login
+      // Check if we're using Supabase or the API
       if (dbStatus === 'connected') {
+        // Try Supabase login first
+        try {
+          const { data, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', username)
+            .eq('password', password)
+            .single();
+          
+          if (error || !data) {
+            throw new Error('Invalid credentials');
+          }
+          
+          // Store authentication state
+          localStorage.setItem('adminLoggedIn', 'true');
+          localStorage.setItem('token', 'supabase-auth-token');
+          localStorage.setItem('userId', data.id);
+          
+          toast({
+            title: "Login Successful",
+            description: `Welcome back, ${data.firstname} ${data.lastname}!`,
+          });
+          navigate('/dashboard');
+          return;
+        } catch (supabaseError) {
+          console.error('Supabase login failed, trying API:', supabaseError);
+          // Fall back to API login
+        }
+        
         // Using real API if database is connected
-        const response = await fetch('/api/auth/login', {
+        const response = await fetch('/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, password }),
@@ -70,6 +113,7 @@ export default function AdminLogin() {
         // Store authentication state
         localStorage.setItem('adminLoggedIn', 'true');
         localStorage.setItem('token', data.token);
+        localStorage.setItem('userId', data.user.id);
         
         toast({
           title: "Login Successful",

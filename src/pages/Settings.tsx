@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -14,21 +15,159 @@ import {
   User, 
   Database,
   Filter,
-  Download
+  Download,
+  LogOut
 } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { saveSettings, fetchSettings, logoutUser, getUserProfile } from '@/utils/supabase-utils';
+import { toast } from '@/components/ui/use-toast';
 
 export default function Settings() {
+  const navigate = useNavigate();
   const [minExperience, setMinExperience] = useState<number>(2);
   const [minScore, setMinScore] = useState<number>(70);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [saving, setSaving] = useState<boolean>(false);
+  const [qualification, setQualification] = useState<string>("bachelors");
+  const [companyName, setCompanyName] = useState<string>("TalentATS Inc.");
+  const [systemEmail, setSystemEmail] = useState<string>("recruitment@talentats.com");
+  const [timezone, setTimezone] = useState<string>("UTC+0");
+  const [dateFormat, setDateFormat] = useState<string>("MM/DD/YYYY");
+  const [emailNotifications, setEmailNotifications] = useState<boolean>(true);
+  const [newApplicationAlerts, setNewApplicationAlerts] = useState<boolean>(true);
+  const [jobPostingExpiryAlerts, setJobPostingExpiryAlerts] = useState<boolean>(true);
+  const [automaticShortlisting, setAutomaticShortlisting] = useState<boolean>(true);
+  const [userProfile, setUserProfile] = useState<any>(null);
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        setLoading(true);
+        const settings = await fetchSettings();
+        if (settings) {
+          setCompanyName(settings.companyName || "TalentATS Inc.");
+          setSystemEmail(settings.systemEmail || "recruitment@talentats.com");
+          setTimezone(settings.timezone || "UTC+0");
+          setDateFormat(settings.dateFormat || "MM/DD/YYYY");
+          setMinExperience(settings.minYearsExperience || 2);
+          setQualification(settings.minQualification || "bachelors");
+          setMinScore(settings.skillMatchThreshold || 70);
+          setEmailNotifications(settings.emailNotifications ?? true);
+          setNewApplicationAlerts(settings.newApplicationAlerts ?? true);
+          setJobPostingExpiryAlerts(settings.jobPostingExpiryAlerts ?? true);
+          setAutomaticShortlisting(settings.automaticShortlisting ?? true);
+        }
+
+        const profile = await getUserProfile();
+        if (profile) {
+          setUserProfile(profile);
+        }
+      } catch (error) {
+        console.error("Error loading settings:", error);
+        toast({
+          title: "Failed to load settings",
+          description: "Could not load your settings from the database.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadSettings();
+  }, []);
+
+  const handleSaveGeneralSettings = async () => {
+    try {
+      setSaving(true);
+      await saveSettings({
+        companyName,
+        systemEmail,
+        timezone,
+        dateFormat,
+        emailNotifications,
+        newApplicationAlerts,
+        jobPostingExpiryAlerts,
+        minYearsExperience: minExperience,
+        minQualification: qualification,
+        skillMatchThreshold: minScore,
+        automaticShortlisting
+      });
+      
+      toast({
+        title: "Settings saved",
+        description: "Your settings have been saved successfully.",
+      });
+    } catch (error) {
+      console.error("Error saving settings:", error);
+      toast({
+        title: "Failed to save settings",
+        description: "There was an error saving your settings.",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logoutUser();
+      toast({
+        title: "Logged out",
+        description: "You have been logged out successfully.",
+      });
+      navigate('/admin-login');
+    } catch (error) {
+      console.error("Error logging out:", error);
+      toast({
+        title: "Failed to log out",
+        description: "There was an error logging you out.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  if (loading) {
+    return (
+      <AppShell>
+        <div className="container mx-auto py-6">
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h2 className="text-2xl font-bold">Settings</h2>
+              <p className="text-gray-600">Configure your recruitment system</p>
+            </div>
+            <div className="animate-pulse bg-gray-200 h-10 w-28 rounded"></div>
+          </div>
+          <div className="space-y-4">
+            <div className="animate-pulse bg-gray-200 h-10 w-full rounded"></div>
+            <div className="animate-pulse bg-gray-200 h-64 w-full rounded"></div>
+          </div>
+        </div>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell>
       <div className="container mx-auto py-6">
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold">Settings</h2>
-          <p className="text-gray-600">Configure your recruitment system</p>
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h2 className="text-2xl font-bold">Settings</h2>
+            <p className="text-gray-600">Configure your recruitment system</p>
+          </div>
+          <div className="flex items-center gap-2">
+            {userProfile && (
+              <div className="text-sm text-gray-600 mr-2">
+                Logged in as: <span className="font-semibold">{userProfile.firstName} {userProfile.lastName}</span>
+              </div>
+            )}
+            <Button variant="outline" className="flex items-center gap-2" onClick={handleLogout}>
+              <LogOut className="h-4 w-4" />
+              Logout
+            </Button>
+          </div>
         </div>
 
         <Tabs defaultValue="general" className="space-y-4">
@@ -70,26 +209,45 @@ export default function Settings() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="company-name">Company Name</Label>
-                  <Input id="company-name" defaultValue="TalentATS Inc." />
+                  <Input 
+                    id="company-name" 
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                  />
                 </div>
                 
                 <div className="space-y-2">
                   <Label htmlFor="system-email">System Email</Label>
-                  <Input id="system-email" type="email" defaultValue="recruitment@talentats.com" />
+                  <Input 
+                    id="system-email" 
+                    type="email" 
+                    value={systemEmail}
+                    onChange={(e) => setSystemEmail(e.target.value)}
+                  />
                 </div>
                 
                 <div className="space-y-2">
                   <Label htmlFor="timezone">Timezone</Label>
-                  <Input id="timezone" defaultValue="UTC+0" />
+                  <Input 
+                    id="timezone" 
+                    value={timezone}
+                    onChange={(e) => setTimezone(e.target.value)}
+                  />
                 </div>
                 
                 <div className="space-y-2">
                   <Label htmlFor="date-format">Date Format</Label>
-                  <Input id="date-format" defaultValue="MM/DD/YYYY" />
+                  <Input 
+                    id="date-format" 
+                    value={dateFormat}
+                    onChange={(e) => setDateFormat(e.target.value)}
+                  />
                 </div>
                 
                 <div className="flex items-center justify-end space-x-2 pt-4">
-                  <Button>Save Changes</Button>
+                  <Button onClick={handleSaveGeneralSettings} disabled={saving}>
+                    {saving ? "Saving..." : "Save Changes"}
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -111,7 +269,10 @@ export default function Settings() {
                       Receive email notifications for important events
                     </p>
                   </div>
-                  <Switch defaultChecked />
+                  <Switch 
+                    checked={emailNotifications}
+                    onCheckedChange={setEmailNotifications}
+                  />
                 </div>
                 
                 <div className="flex items-center justify-between">
@@ -121,7 +282,10 @@ export default function Settings() {
                       Get notified when a new application is submitted
                     </p>
                   </div>
-                  <Switch defaultChecked />
+                  <Switch 
+                    checked={newApplicationAlerts}
+                    onCheckedChange={setNewApplicationAlerts}
+                  />
                 </div>
                 
                 <div className="flex items-center justify-between">
@@ -131,11 +295,16 @@ export default function Settings() {
                       Get alerts before job postings expire
                     </p>
                   </div>
-                  <Switch defaultChecked />
+                  <Switch 
+                    checked={jobPostingExpiryAlerts}
+                    onCheckedChange={setJobPostingExpiryAlerts}
+                  />
                 </div>
                 
                 <div className="flex items-center justify-end space-x-2 pt-4">
-                  <Button>Save Changes</Button>
+                  <Button onClick={handleSaveGeneralSettings} disabled={saving}>
+                    {saving ? "Saving..." : "Save Changes"}
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -169,7 +338,10 @@ export default function Settings() {
                 
                 <div className="space-y-3">
                   <Label>Qualification Requirements</Label>
-                  <Select defaultValue="bachelors">
+                  <Select 
+                    value={qualification}
+                    onValueChange={setQualification}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select minimum qualification" />
                     </SelectTrigger>
@@ -211,11 +383,16 @@ export default function Settings() {
                       Automatically shortlist candidates based on criteria
                     </p>
                   </div>
-                  <Switch defaultChecked />
+                  <Switch 
+                    checked={automaticShortlisting}
+                    onCheckedChange={setAutomaticShortlisting}
+                  />
                 </div>
                 
                 <div className="flex items-center justify-end space-x-2 pt-4">
-                  <Button>Save Criteria</Button>
+                  <Button onClick={handleSaveGeneralSettings} disabled={saving}>
+                    {saving ? "Saving..." : "Save Criteria"}
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -412,3 +589,4 @@ export default function Settings() {
     </AppShell>
   );
 }
+

@@ -375,3 +375,149 @@ export const updateApplicationStatus = async (applicationId: string, status: str
   };
 };
 
+/**
+ * Saves settings to the database
+ */
+export const saveSettings = async (settings: any) => {
+  // Check if settings table exists, if not create it
+  try {
+    // Map frontend camelCase to database column names
+    const dbSettings = {
+      company_name: settings.companyName,
+      system_email: settings.systemEmail,
+      timezone: settings.timezone,
+      date_format: settings.dateFormat,
+      email_notifications: settings.emailNotifications,
+      new_application_alerts: settings.newApplicationAlerts,
+      job_posting_expiry_alerts: settings.jobPostingExpiryAlerts,
+      min_years_experience: settings.minYearsExperience,
+      min_qualification: settings.minQualification,
+      skill_match_threshold: settings.skillMatchThreshold,
+      automatic_shortlisting: settings.automaticShortlisting,
+      updated_at: new Date().toISOString()
+    };
+
+    // First check if settings already exist
+    const { data: existingSettings } = await supabase
+      .from('settings')
+      .select('*')
+      .limit(1);
+
+    let result;
+    
+    if (existingSettings && existingSettings.length > 0) {
+      // Update existing settings
+      const { data, error } = await supabase
+        .from('settings')
+        .update(dbSettings)
+        .eq('id', existingSettings[0].id)
+        .select();
+        
+      if (error) throw error;
+      result = data;
+    } else {
+      // Insert new settings
+      const { data, error } = await supabase
+        .from('settings')
+        .insert(dbSettings)
+        .select();
+        
+      if (error) throw error;
+      result = data;
+    }
+
+    return {
+      id: result[0].id,
+      companyName: result[0].company_name,
+      systemEmail: result[0].system_email,
+      timezone: result[0].timezone,
+      dateFormat: result[0].date_format,
+      emailNotifications: result[0].email_notifications,
+      newApplicationAlerts: result[0].new_application_alerts,
+      jobPostingExpiryAlerts: result[0].job_posting_expiry_alerts,
+      minYearsExperience: result[0].min_years_experience,
+      minQualification: result[0].min_qualification,
+      skillMatchThreshold: result[0].skill_match_threshold,
+      automaticShortlisting: result[0].automatic_shortlisting,
+      updatedAt: result[0].updated_at
+    };
+  } catch (error) {
+    console.error('Error saving settings:', error);
+    throw error;
+  }
+};
+
+/**
+ * Fetches settings from the database
+ */
+export const fetchSettings = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('settings')
+      .select('*')
+      .limit(1);
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      return null;
+    }
+
+    return {
+      id: data[0].id,
+      companyName: data[0].company_name,
+      systemEmail: data[0].system_email,
+      timezone: data[0].timezone,
+      dateFormat: data[0].date_format,
+      emailNotifications: data[0].email_notifications,
+      newApplicationAlerts: data[0].new_application_alerts,
+      jobPostingExpiryAlerts: data[0].job_posting_expiry_alerts,
+      minYearsExperience: data[0].min_years_experience,
+      minQualification: data[0].min_qualification,
+      skillMatchThreshold: data[0].skill_match_threshold,
+      automaticShortlisting: data[0].automatic_shortlisting,
+      updatedAt: data[0].updated_at
+    };
+  } catch (error) {
+    console.error('Error fetching settings:', error);
+    throw error;
+  }
+};
+
+/**
+ * Logs out the user
+ */
+export const logoutUser = async () => {
+  localStorage.removeItem('adminLoggedIn');
+  localStorage.removeItem('token');
+  return true;
+};
+
+/**
+ * Fetches the user profile
+ */
+export const getUserProfile = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .limit(1);
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      return null;
+    }
+
+    return {
+      id: data[0].id,
+      email: data[0].email,
+      firstName: data[0].firstname || data[0].firstName,
+      lastName: data[0].lastname || data[0].lastName,
+      role: data[0].role
+    };
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    throw error;
+  }
+};
