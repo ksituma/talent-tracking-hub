@@ -1,252 +1,238 @@
+
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { 
-  Settings as SettingsIcon, 
-  Mail, 
-  Bell, 
-  Shield, 
-  User, 
-  Database,
-  Filter,
-  Download,
-  LogOut
-} from 'lucide-react';
-import { Slider } from '@/components/ui/slider';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { saveSettings, fetchSettings, logoutUser, getUserProfile } from '@/utils/supabase-utils';
 import { toast } from '@/components/ui/use-toast';
+import { saveSettings, fetchSettings, sendEmail } from '@/utils/supabase-utils';
 
 export default function Settings() {
-  const navigate = useNavigate();
-  const [minExperience, setMinExperience] = useState<number>(2);
-  const [minScore, setMinScore] = useState<number>(70);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [saving, setSaving] = useState<boolean>(false);
-  const [qualification, setQualification] = useState<string>("bachelors");
-  const [companyName, setCompanyName] = useState<string>("TalentATS Inc.");
-  const [systemEmail, setSystemEmail] = useState<string>("recruitment@talentats.com");
-  const [timezone, setTimezone] = useState<string>("UTC+0");
-  const [dateFormat, setDateFormat] = useState<string>("MM/DD/YYYY");
-  const [emailNotifications, setEmailNotifications] = useState<boolean>(true);
-  const [newApplicationAlerts, setNewApplicationAlerts] = useState<boolean>(true);
-  const [jobPostingExpiryAlerts, setJobPostingExpiryAlerts] = useState<boolean>(true);
-  const [automaticShortlisting, setAutomaticShortlisting] = useState<boolean>(true);
-  const [userProfile, setUserProfile] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [generalSettings, setGeneralSettings] = useState({
+    companyName: 'TalentATS Inc.',
+    systemEmail: 'recruitment@talentats.com',
+    timezone: 'UTC+0',
+    dateFormat: 'MM/DD/YYYY'
+  });
+  
+  const [notificationSettings, setNotificationSettings] = useState({
+    emailNotifications: true,
+    newApplicationAlerts: true,
+    jobPostingExpiryAlerts: true
+  });
+  
+  const [recruitmentSettings, setRecruitmentSettings] = useState({
+    minYearsExperience: 2,
+    minQualification: 'Bachelor\'s Degree',
+    skillMatchThreshold: 70,
+    automaticShortlisting: true
+  });
 
+  // Load settings from database
   useEffect(() => {
     const loadSettings = async () => {
+      setIsLoading(true);
       try {
-        setLoading(true);
         const settings = await fetchSettings();
+        
         if (settings) {
-          setCompanyName(settings.companyName || "TalentATS Inc.");
-          setSystemEmail(settings.systemEmail || "recruitment@talentats.com");
-          setTimezone(settings.timezone || "UTC+0");
-          setDateFormat(settings.dateFormat || "MM/DD/YYYY");
-          setMinExperience(settings.minYearsExperience || 2);
-          setQualification(settings.minQualification || "bachelors");
-          setMinScore(settings.skillMatchThreshold || 70);
-          setEmailNotifications(settings.emailNotifications ?? true);
-          setNewApplicationAlerts(settings.newApplicationAlerts ?? true);
-          setJobPostingExpiryAlerts(settings.jobPostingExpiryAlerts ?? true);
-          setAutomaticShortlisting(settings.automaticShortlisting ?? true);
-        }
-
-        const profile = await getUserProfile();
-        if (profile) {
-          setUserProfile(profile);
+          // Update general settings
+          setGeneralSettings({
+            companyName: settings.companyName || 'TalentATS Inc.',
+            systemEmail: settings.systemEmail || 'recruitment@talentats.com',
+            timezone: settings.timezone || 'UTC+0',
+            dateFormat: settings.dateFormat || 'MM/DD/YYYY'
+          });
+          
+          // Update notification settings
+          setNotificationSettings({
+            emailNotifications: settings.emailNotifications ?? true,
+            newApplicationAlerts: settings.newApplicationAlerts ?? true,
+            jobPostingExpiryAlerts: settings.jobPostingExpiryAlerts ?? true
+          });
+          
+          // Update recruitment settings
+          setRecruitmentSettings({
+            minYearsExperience: settings.minYearsExperience ?? 2,
+            minQualification: settings.minQualification || 'Bachelor\'s Degree',
+            skillMatchThreshold: settings.skillMatchThreshold ?? 70,
+            automaticShortlisting: settings.automaticShortlisting ?? true
+          });
+          
+          console.log('Settings loaded successfully:', settings);
+        } else {
+          console.log('No settings found, using defaults');
         }
       } catch (error) {
-        console.error("Error loading settings:", error);
+        console.error('Error loading settings:', error);
         toast({
-          title: "Failed to load settings",
-          description: "Could not load your settings from the database.",
           variant: "destructive",
+          title: "Failed to load settings",
+          description: error.message
         });
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
-
+    
     loadSettings();
   }, []);
 
-  const handleSaveGeneralSettings = async () => {
+  const handleGeneralChange = (e) => {
+    const { name, value } = e.target;
+    setGeneralSettings(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSwitchChange = (field, value) => {
+    setNotificationSettings(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleQualificationChange = (value) => {
+    setRecruitmentSettings(prev => ({ ...prev, minQualification: value }));
+  };
+
+  const handleRecruitmentChange = (e) => {
+    const { name, value } = e.target;
+    setRecruitmentSettings(prev => ({ ...prev, [name]: parseInt(value) }));
+  };
+
+  const handleAutomaticShortlistingChange = (value) => {
+    setRecruitmentSettings(prev => ({ ...prev, automaticShortlisting: value }));
+  };
+
+  const handleTestEmail = async () => {
     try {
-      setSaving(true);
-      await saveSettings({
-        companyName,
-        systemEmail,
-        timezone,
-        dateFormat,
-        emailNotifications,
-        newApplicationAlerts,
-        jobPostingExpiryAlerts,
-        minYearsExperience: minExperience,
-        minQualification: qualification,
-        skillMatchThreshold: minScore,
-        automaticShortlisting
+      setIsLoading(true);
+      await sendEmail({
+        to: generalSettings.systemEmail,
+        subject: 'Test Email from TalentATS',
+        html: `
+          <h1>Test Email from TalentATS</h1>
+          <p>This is a test email to confirm your email settings are working correctly.</p>
+          <p>Company: ${generalSettings.companyName}</p>
+          <p>Timezone: ${generalSettings.timezone}</p>
+          <p>Date Format: ${generalSettings.dateFormat}</p>
+          <p>Sent at: ${new Date().toLocaleString()}</p>
+        `,
       });
       
       toast({
-        title: "Settings saved",
-        description: "Your settings have been saved successfully.",
+        title: "Test email sent",
+        description: `Email has been sent to ${generalSettings.systemEmail}`
       });
     } catch (error) {
-      console.error("Error saving settings:", error);
+      console.error('Failed to send test email:', error);
       toast({
-        title: "Failed to save settings",
-        description: "There was an error saving your settings.",
         variant: "destructive",
+        title: "Failed to send test email",
+        description: error.message
       });
     } finally {
-      setSaving(false);
+      setIsLoading(false);
     }
   };
 
-  const handleLogout = async () => {
+  const handleSaveSettings = async () => {
+    setIsLoading(true);
     try {
-      await logoutUser();
+      // Combine all settings
+      const combinedSettings = {
+        ...generalSettings,
+        ...notificationSettings,
+        ...recruitmentSettings
+      };
+      
+      await saveSettings(combinedSettings);
+      
       toast({
-        title: "Logged out",
-        description: "You have been logged out successfully.",
+        title: "Settings saved",
+        description: "Your settings have been successfully saved."
       });
-      navigate('/admin-login');
     } catch (error) {
-      console.error("Error logging out:", error);
+      console.error('Error saving settings:', error);
       toast({
-        title: "Failed to log out",
-        description: "There was an error logging you out.",
         variant: "destructive",
+        title: "Failed to save settings",
+        description: error.message
       });
+    } finally {
+      setIsLoading(false);
     }
   };
-
-  if (loading) {
-    return (
-      <AppShell>
-        <div className="container mx-auto py-6">
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h2 className="text-2xl font-bold">Settings</h2>
-              <p className="text-gray-600">Configure your recruitment system</p>
-            </div>
-            <div className="animate-pulse bg-gray-200 h-10 w-28 rounded"></div>
-          </div>
-          <div className="space-y-4">
-            <div className="animate-pulse bg-gray-200 h-10 w-full rounded"></div>
-            <div className="animate-pulse bg-gray-200 h-64 w-full rounded"></div>
-          </div>
-        </div>
-      </AppShell>
-    );
-  }
 
   return (
     <AppShell>
       <div className="container mx-auto py-6">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h2 className="text-2xl font-bold">Settings</h2>
-            <p className="text-gray-600">Configure your recruitment system</p>
-          </div>
-          <div className="flex items-center gap-2">
-            {userProfile && (
-              <div className="text-sm text-gray-600 mr-2">
-                Logged in as: <span className="font-semibold">{userProfile.firstName} {userProfile.lastName}</span>
-              </div>
-            )}
-            <Button variant="outline" className="flex items-center gap-2" onClick={handleLogout}>
-              <LogOut className="h-4 w-4" />
-              Logout
-            </Button>
-          </div>
-        </div>
-
-        <Tabs defaultValue="general" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="general" className="flex items-center gap-2">
-              <SettingsIcon className="h-4 w-4" />
-              General
-            </TabsTrigger>
-            <TabsTrigger value="notifications" className="flex items-center gap-2">
-              <Bell className="h-4 w-4" />
-              Notifications
-            </TabsTrigger>
-            <TabsTrigger value="shortlisting" className="flex items-center gap-2">
-              <Filter className="h-4 w-4" />
-              Shortlisting
-            </TabsTrigger>
-            <TabsTrigger value="database" className="flex items-center gap-2">
-              <Database className="h-4 w-4" />
-              Database
-            </TabsTrigger>
-            <TabsTrigger value="account" className="flex items-center gap-2">
-              <User className="h-4 w-4" />
-              Account
-            </TabsTrigger>
-            <TabsTrigger value="security" className="flex items-center gap-2">
-              <Shield className="h-4 w-4" />
-              Security
-            </TabsTrigger>
+        <h2 className="text-2xl font-bold mb-6">System Settings</h2>
+        
+        <Tabs defaultValue="general">
+          <TabsList className="mb-6">
+            <TabsTrigger value="general">General</TabsTrigger>
+            <TabsTrigger value="notifications">Notifications</TabsTrigger>
+            <TabsTrigger value="recruitment">Recruitment</TabsTrigger>
           </TabsList>
           
           <TabsContent value="general">
             <Card>
               <CardHeader>
                 <CardTitle>General Settings</CardTitle>
-                <CardDescription>
-                  Manage your basic system settings
-                </CardDescription>
+                <CardDescription>Configure your basic system settings.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="company-name">Company Name</Label>
+                  <Label htmlFor="companyName">Company Name</Label>
                   <Input 
-                    id="company-name" 
-                    value={companyName}
-                    onChange={(e) => setCompanyName(e.target.value)}
+                    id="companyName" 
+                    name="companyName"
+                    value={generalSettings.companyName} 
+                    onChange={handleGeneralChange}
                   />
                 </div>
-                
                 <div className="space-y-2">
-                  <Label htmlFor="system-email">System Email</Label>
+                  <Label htmlFor="systemEmail">System Email</Label>
                   <Input 
-                    id="system-email" 
+                    id="systemEmail" 
+                    name="systemEmail"
                     type="email" 
-                    value={systemEmail}
-                    onChange={(e) => setSystemEmail(e.target.value)}
+                    value={generalSettings.systemEmail} 
+                    onChange={handleGeneralChange}
                   />
+                  <p className="text-sm text-gray-500">This email will be used for system notifications.</p>
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="timezone">Timezone</Label>
-                  <Input 
-                    id="timezone" 
-                    value={timezone}
-                    onChange={(e) => setTimezone(e.target.value)}
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="timezone">Timezone</Label>
+                    <Input 
+                      id="timezone" 
+                      name="timezone"
+                      value={generalSettings.timezone} 
+                      onChange={handleGeneralChange}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="dateFormat">Date Format</Label>
+                    <Input 
+                      id="dateFormat" 
+                      name="dateFormat"
+                      value={generalSettings.dateFormat} 
+                      onChange={handleGeneralChange}
+                    />
+                  </div>
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="date-format">Date Format</Label>
-                  <Input 
-                    id="date-format" 
-                    value={dateFormat}
-                    onChange={(e) => setDateFormat(e.target.value)}
-                  />
-                </div>
-                
-                <div className="flex items-center justify-end space-x-2 pt-4">
-                  <Button onClick={handleSaveGeneralSettings} disabled={saving}>
-                    {saving ? "Saving..." : "Save Changes"}
+                <div className="pt-4">
+                  <Button 
+                    variant="outline" 
+                    onClick={handleTestEmail}
+                    disabled={isLoading}
+                  >
+                    Send Test Email
                   </Button>
                 </div>
               </CardContent>
@@ -257,336 +243,120 @@ export default function Settings() {
             <Card>
               <CardHeader>
                 <CardTitle>Notification Settings</CardTitle>
-                <CardDescription>
-                  Configure how you receive notifications
-                </CardDescription>
+                <CardDescription>Configure the email notifications you want to receive.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-6">
                 <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label className="text-base">Email Notifications</Label>
-                    <p className="text-sm text-gray-500">
-                      Receive email notifications for important events
-                    </p>
+                  <div>
+                    <p className="font-medium">Email Notifications</p>
+                    <p className="text-sm text-gray-500">Enable or disable all email notifications</p>
                   </div>
                   <Switch 
-                    checked={emailNotifications}
-                    onCheckedChange={setEmailNotifications}
+                    checked={notificationSettings.emailNotifications} 
+                    onCheckedChange={(value) => handleSwitchChange('emailNotifications', value)}
                   />
                 </div>
-                
+                <Separator />
                 <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label className="text-base">New Application Alerts</Label>
-                    <p className="text-sm text-gray-500">
-                      Get notified when a new application is submitted
-                    </p>
+                  <div>
+                    <p className="font-medium">New Application Alerts</p>
+                    <p className="text-sm text-gray-500">Get an email when a new application is submitted</p>
                   </div>
                   <Switch 
-                    checked={newApplicationAlerts}
-                    onCheckedChange={setNewApplicationAlerts}
+                    checked={notificationSettings.newApplicationAlerts} 
+                    onCheckedChange={(value) => handleSwitchChange('newApplicationAlerts', value)}
+                    disabled={!notificationSettings.emailNotifications}
                   />
                 </div>
-                
+                <Separator />
                 <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label className="text-base">Job Posting Expiry</Label>
-                    <p className="text-sm text-gray-500">
-                      Get alerts before job postings expire
-                    </p>
+                  <div>
+                    <p className="font-medium">Job Posting Expiry Alerts</p>
+                    <p className="text-sm text-gray-500">Get an email when a job posting is about to expire</p>
                   </div>
                   <Switch 
-                    checked={jobPostingExpiryAlerts}
-                    onCheckedChange={setJobPostingExpiryAlerts}
+                    checked={notificationSettings.jobPostingExpiryAlerts} 
+                    onCheckedChange={(value) => handleSwitchChange('jobPostingExpiryAlerts', value)}
+                    disabled={!notificationSettings.emailNotifications}
                   />
-                </div>
-                
-                <div className="flex items-center justify-end space-x-2 pt-4">
-                  <Button onClick={handleSaveGeneralSettings} disabled={saving}>
-                    {saving ? "Saving..." : "Save Changes"}
-                  </Button>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
           
-          <TabsContent value="shortlisting">
+          <TabsContent value="recruitment">
             <Card>
               <CardHeader>
-                <CardTitle>Shortlisting Criteria</CardTitle>
-                <CardDescription>
-                  Configure the criteria used to automatically shortlist candidates
-                </CardDescription>
+                <CardTitle>Recruitment Settings</CardTitle>
+                <CardDescription>Configure your recruitment and shortlisting preferences.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="space-y-3">
-                  <Label>Minimum Years of Experience</Label>
-                  <div className="flex items-center space-x-2">
-                    <Slider 
-                      value={[minExperience]} 
-                      onValueChange={(values) => setMinExperience(values[0])}
-                      max={10}
-                      step={1}
-                      className="flex-1"
-                    />
-                    <span className="w-12 text-center font-medium">{minExperience} years</span>
-                  </div>
-                  <p className="text-sm text-gray-500">
-                    Candidates with less than the minimum years will not be shortlisted automatically
-                  </p>
+                <div className="space-y-2">
+                  <Label htmlFor="minYearsExperience">Minimum Years of Experience</Label>
+                  <Input 
+                    id="minYearsExperience" 
+                    name="minYearsExperience"
+                    type="number" 
+                    min="0"
+                    value={recruitmentSettings.minYearsExperience} 
+                    onChange={handleRecruitmentChange}
+                  />
+                  <p className="text-sm text-gray-500">Default minimum experience required for job postings</p>
                 </div>
-                
-                <div className="space-y-3">
-                  <Label>Qualification Requirements</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="minQualification">Minimum Qualification</Label>
                   <Select 
-                    value={qualification}
-                    onValueChange={setQualification}
+                    value={recruitmentSettings.minQualification} 
+                    onValueChange={handleQualificationChange}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger id="minQualification">
                       <SelectValue placeholder="Select minimum qualification" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">No Minimum</SelectItem>
-                      <SelectItem value="high_school">High School</SelectItem>
-                      <SelectItem value="associate">Associate Degree</SelectItem>
-                      <SelectItem value="bachelors">Bachelor's Degree</SelectItem>
-                      <SelectItem value="masters">Master's Degree</SelectItem>
-                      <SelectItem value="phd">PhD</SelectItem>
+                      <SelectItem value="High School">High School</SelectItem>
+                      <SelectItem value="Associate's Degree">Associate's Degree</SelectItem>
+                      <SelectItem value="Bachelor's Degree">Bachelor's Degree</SelectItem>
+                      <SelectItem value="Master's Degree">Master's Degree</SelectItem>
+                      <SelectItem value="PhD">PhD</SelectItem>
                     </SelectContent>
                   </Select>
-                  <p className="text-sm text-gray-500">
-                    Minimum qualification required for automatic shortlisting
-                  </p>
+                  <p className="text-sm text-gray-500">Default minimum qualification for job postings</p>
                 </div>
-                
-                <div className="space-y-3">
-                  <Label>Skill Match Score Threshold</Label>
-                  <div className="flex items-center space-x-2">
-                    <Slider 
-                      value={[minScore]} 
-                      onValueChange={(values) => setMinScore(values[0])}
-                      max={100}
-                      step={5}
-                      className="flex-1"
-                    />
-                    <span className="w-12 text-center font-medium">{minScore}%</span>
-                  </div>
-                  <p className="text-sm text-gray-500">
-                    Candidates with skill match below this percentage will not be shortlisted
-                  </p>
+                <div className="space-y-2">
+                  <Label htmlFor="skillMatchThreshold">Skill Match Threshold (%)</Label>
+                  <Input 
+                    id="skillMatchThreshold" 
+                    name="skillMatchThreshold"
+                    type="number" 
+                    min="0" 
+                    max="100"
+                    value={recruitmentSettings.skillMatchThreshold} 
+                    onChange={handleRecruitmentChange}
+                  />
+                  <p className="text-sm text-gray-500">Required percentage of skills matching for automatic shortlisting</p>
                 </div>
-                
+                <Separator />
                 <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label className="text-base">Automatic Shortlisting</Label>
-                    <p className="text-sm text-gray-500">
-                      Automatically shortlist candidates based on criteria
-                    </p>
+                  <div>
+                    <p className="font-medium">Automatic Shortlisting</p>
+                    <p className="text-sm text-gray-500">Automatically shortlist candidates that meet all criteria</p>
                   </div>
                   <Switch 
-                    checked={automaticShortlisting}
-                    onCheckedChange={setAutomaticShortlisting}
+                    checked={recruitmentSettings.automaticShortlisting} 
+                    onCheckedChange={handleAutomaticShortlistingChange}
                   />
-                </div>
-                
-                <div className="flex items-center justify-end space-x-2 pt-4">
-                  <Button onClick={handleSaveGeneralSettings} disabled={saving}>
-                    {saving ? "Saving..." : "Save Criteria"}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="database">
-            <Card>
-              <CardHeader>
-                <CardTitle>Database Schema</CardTitle>
-                <CardDescription>
-                  View and manage your database schema
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="rounded-md border p-4">
-                  <h3 className="text-lg font-medium mb-2">Current Schema</h3>
-                  <div className="space-y-4">
-                    <div className="bg-gray-100 p-3 rounded-md">
-                      <h4 className="font-medium">jobs</h4>
-                      <p className="text-sm text-gray-600">Stores job listings</p>
-                      <div className="mt-2 text-sm">
-                        <div className="grid grid-cols-3 gap-2 font-medium text-gray-700">
-                          <span>Field</span>
-                          <span>Type</span>
-                          <span>Description</span>
-                        </div>
-                        <div className="grid grid-cols-3 gap-2 text-gray-600 mt-1">
-                          <span>id</span>
-                          <span>number</span>
-                          <span>Primary key</span>
-                        </div>
-                        <div className="grid grid-cols-3 gap-2 text-gray-600">
-                          <span>title</span>
-                          <span>string</span>
-                          <span>Job title</span>
-                        </div>
-                        <div className="grid grid-cols-3 gap-2 text-gray-600">
-                          <span>company</span>
-                          <span>string</span>
-                          <span>Company name</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="bg-gray-100 p-3 rounded-md">
-                      <h4 className="font-medium">candidates</h4>
-                      <p className="text-sm text-gray-600">Stores candidate information</p>
-                      <div className="mt-2 text-sm">
-                        <div className="grid grid-cols-3 gap-2 font-medium text-gray-700">
-                          <span>Field</span>
-                          <span>Type</span>
-                          <span>Description</span>
-                        </div>
-                        <div className="grid grid-cols-3 gap-2 text-gray-600 mt-1">
-                          <span>id</span>
-                          <span>number</span>
-                          <span>Primary key</span>
-                        </div>
-                        <div className="grid grid-cols-3 gap-2 text-gray-600">
-                          <span>name</span>
-                          <span>string</span>
-                          <span>Full name</span>
-                        </div>
-                        <div className="grid grid-cols-3 gap-2 text-gray-600">
-                          <span>email</span>
-                          <span>string</span>
-                          <span>Contact email</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="bg-gray-100 p-3 rounded-md">
-                      <h4 className="font-medium">applications</h4>
-                      <p className="text-sm text-gray-600">Stores job applications</p>
-                      <div className="mt-2 text-sm">
-                        <div className="grid grid-cols-3 gap-2 font-medium text-gray-700">
-                          <span>Field</span>
-                          <span>Type</span>
-                          <span>Description</span>
-                        </div>
-                        <div className="grid grid-cols-3 gap-2 text-gray-600 mt-1">
-                          <span>id</span>
-                          <span>number</span>
-                          <span>Primary key</span>
-                        </div>
-                        <div className="grid grid-cols-3 gap-2 text-gray-600">
-                          <span>job_id</span>
-                          <span>number</span>
-                          <span>Foreign key to jobs</span>
-                        </div>
-                        <div className="grid grid-cols-3 gap-2 text-gray-600">
-                          <span>candidate_id</span>
-                          <span>number</span>
-                          <span>Foreign key to candidates</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-end space-x-2">
-                  <Button variant="outline" className="flex items-center gap-2">
-                    <Download className="h-4 w-4" />
-                    Export Schema
-                  </Button>
-                  <Button>View Full Schema</Button>
-                </div>
-                
-                <div className="bg-blue-50 p-4 rounded-md">
-                  <h3 className="text-md font-medium mb-2 text-blue-700">Deployment Guide</h3>
-                  <p className="text-sm text-blue-600 mb-2">
-                    To deploy this application with a database using Coolify:
-                  </p>
-                  <ol className="text-sm text-blue-600 list-decimal pl-5 space-y-1">
-                    <li>Sign up for a Coolify account at <a href="https://coolify.io" target="_blank" rel="noopener noreferrer" className="underline">coolify.io</a></li>
-                    <li>Set up a new Coolify server or connect to an existing one</li>
-                    <li>Create a new PostgreSQL database resource in Coolify</li>
-                    <li>Create a new application and connect it to your GitHub repository</li>
-                    <li>Set the database connection string as an environment variable in your application settings</li>
-                    <li>Deploy your application and database together</li>
-                  </ol>
-                  <Button variant="link" className="text-blue-700 p-0 h-auto mt-2">
-                    View detailed deployment guide
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="account">
-            <Card>
-              <CardHeader>
-                <CardTitle>Account Settings</CardTitle>
-                <CardDescription>
-                  Manage your account information
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="full-name">Full Name</Label>
-                  <Input id="full-name" defaultValue="Sarah Johnson" />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="email-address">Email Address</Label>
-                  <Input id="email-address" type="email" defaultValue="sarah.johnson@talentats.com" />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="job-title">Job Title</Label>
-                  <Input id="job-title" defaultValue="HR Manager" />
-                </div>
-                
-                <div className="flex items-center justify-end space-x-2 pt-4">
-                  <Button>Update Account</Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="security">
-            <Card>
-              <CardHeader>
-                <CardTitle>Security Settings</CardTitle>
-                <CardDescription>
-                  Manage your security preferences
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="current-password">Current Password</Label>
-                  <Input id="current-password" type="password" />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="new-password">New Password</Label>
-                  <Input id="new-password" type="password" />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="confirm-password">Confirm New Password</Label>
-                  <Input id="confirm-password" type="password" />
-                </div>
-                
-                <div className="flex items-center justify-between pt-4">
-                  <Button variant="outline">Enable Two-Factor Authentication</Button>
-                  <Button>Change Password</Button>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
+        
+        <div className="mt-6 flex justify-end">
+          <Button onClick={handleSaveSettings} disabled={isLoading}>
+            {isLoading ? 'Saving...' : 'Save Settings'}
+          </Button>
+        </div>
       </div>
     </AppShell>
   );
 }
-

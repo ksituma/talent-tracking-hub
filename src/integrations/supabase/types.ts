@@ -393,6 +393,57 @@ export type Database = {
           },
         ]
       }
+      settings: {
+        Row: {
+          automatic_shortlisting: boolean | null
+          company_name: string
+          created_at: string | null
+          date_format: string
+          email_notifications: boolean | null
+          id: string
+          job_posting_expiry_alerts: boolean | null
+          min_qualification: string | null
+          min_years_experience: number | null
+          new_application_alerts: boolean | null
+          skill_match_threshold: number | null
+          system_email: string
+          timezone: string
+          updated_at: string | null
+        }
+        Insert: {
+          automatic_shortlisting?: boolean | null
+          company_name?: string
+          created_at?: string | null
+          date_format?: string
+          email_notifications?: boolean | null
+          id?: string
+          job_posting_expiry_alerts?: boolean | null
+          min_qualification?: string | null
+          min_years_experience?: number | null
+          new_application_alerts?: boolean | null
+          skill_match_threshold?: number | null
+          system_email?: string
+          timezone?: string
+          updated_at?: string | null
+        }
+        Update: {
+          automatic_shortlisting?: boolean | null
+          company_name?: string
+          created_at?: string | null
+          date_format?: string
+          email_notifications?: boolean | null
+          id?: string
+          job_posting_expiry_alerts?: boolean | null
+          min_qualification?: string | null
+          min_years_experience?: number | null
+          new_application_alerts?: boolean | null
+          skill_match_threshold?: number | null
+          system_email?: string
+          timezone?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       short_courses: {
         Row: {
           candidateid: string

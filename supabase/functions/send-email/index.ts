@@ -8,35 +8,38 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-// Create SMTP client
+// Create SMTP client for Gmail
 const createClient = () => {
   return new SMTPClient({
     connection: {
-      hostname: Deno.env.get("SMTP_HOSTNAME") || "smtp.gmail.com",
-      port: parseInt(Deno.env.get("SMTP_PORT") || "587"),
+      hostname: "smtp.gmail.com",
+      port: 587,
       tls: true,
       auth: {
-        username: Deno.env.get("SMTP_USERNAME") || "",
-        password: Deno.env.get("SMTP_PASSWORD") || "",
+        username: Deno.env.get("GMAIL_USER") || "",
+        password: Deno.env.get("GMAIL_APP_PASSWORD") || "",
       },
     },
   });
 };
 
 serve(async (req) => {
+  console.log("Email function called with method:", req.method);
+  
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { recipients, subject, html, text, from, attachments } = await req.json();
+    const { to, subject, html, text, from } = await req.json();
+    console.log("Email request data:", { to, subject, from });
 
     // Validate required fields
-    if (!recipients || !subject || (!html && !text)) {
+    if (!to || !subject || (!html && !text)) {
       return new Response(
         JSON.stringify({
-          error: "Missing required fields: recipients, subject, and either html or text are required",
+          error: "Missing required fields: 'to', 'subject', and either 'html' or 'text' are required",
         }),
         {
           status: 400,
@@ -47,17 +50,20 @@ serve(async (req) => {
 
     const client = createClient();
     
+    // Log before attempting to send
+    console.log("Attempting to send email with SMTP client...");
+    
     // Attempt to send email
     await client.send({
-      from: from || Deno.env.get("SMTP_FROM") || "no-reply@talentats.com",
-      to: Array.isArray(recipients) ? recipients : [recipients],
+      from: from || Deno.env.get("DEFAULT_FROM_EMAIL") || "no-reply@talentats.com",
+      to: Array.isArray(to) ? to : [to],
       subject,
       content: text ? text : undefined,
       html: html ? html : undefined,
-      attachments: attachments || [],
     });
 
     await client.close();
+    console.log("Email sent successfully");
 
     return new Response(
       JSON.stringify({ success: true, message: "Email sent successfully" }),
@@ -69,7 +75,11 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error sending email:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        stack: error.stack,
+        details: "Check that GMAIL_USER and GMAIL_APP_PASSWORD are correctly set in Supabase secrets"
+      }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
