@@ -22,7 +22,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const isAuthenticated = localStorage.getItem('adminLoggedIn') === 'true';
   
   if (!isAuthenticated) {
-    return <Navigate to="/admin-login" replace />;
+    return <Navigate to="/admin/login" replace />;
   }
   
   return <>{children}</>;
@@ -109,7 +109,7 @@ const App = () => {
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/admin-login" element={<AdminLogin />} />
+            <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/jobs/:id" element={<JobDetails />} />
             <Route path="/dashboard" element={
               <ProtectedRoute>
