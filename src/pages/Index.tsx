@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
@@ -131,7 +130,7 @@ export default function Index() {
   );
 
   return (
-    <AppShell showSidebar={false} showAdminLogin={true}>
+    <AppShell>
       <div className="container mx-auto py-8">
         <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-xl p-8 mb-8 text-white">
           <div className="max-w-3xl mx-auto text-center">

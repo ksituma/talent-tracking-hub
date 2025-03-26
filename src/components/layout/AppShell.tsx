@@ -54,7 +54,7 @@ export function AppShell({ children }) {
 
   return (
     <div className="flex h-screen">
-      <Sidebar open={sidebarOpen} onOpenChange={setSidebarOpen} />
+      <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header 
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} 

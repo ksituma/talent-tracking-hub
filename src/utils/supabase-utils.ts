@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 /**
@@ -397,37 +396,38 @@ export const saveSettings = async (settings: any) => {
       updated_at: new Date().toISOString()
     };
 
-    // Execute raw SQL query instead of using the typed API
-    // This is a workaround since the settings table isn't in the Supabase types yet
-    const { data: existingSettings, error: queryError } = await supabase.rpc(
-      'check_settings_exist'
-    );
-
-    if (queryError) {
-      console.error('Error checking settings:', queryError);
-      throw queryError;
-    }
-
     let result;
     
-    if (existingSettings) {
-      // Update existing settings with raw query
-      const { data, error } = await supabase.rpc(
-        'update_settings',
-        dbSettings
-      );
+    // Check if settings exist first
+    const { data: checkData, error: checkError } = await supabase
+      .from('settings')
+      .select('id')
+      .limit(1);
+    
+    if (checkError) {
+      console.error('Error checking settings:', checkError);
+      throw checkError;
+    }
+    
+    if (checkData && checkData.length > 0) {
+      // Update existing settings
+      const { data, error } = await supabase
+        .from('settings')
+        .update(dbSettings)
+        .eq('id', checkData[0].id)
+        .select();
       
       if (error) throw error;
-      result = data;
+      result = data[0];
     } else {
-      // Insert new settings with raw query
-      const { data, error } = await supabase.rpc(
-        'create_settings',
-        dbSettings
-      );
+      // Insert new settings
+      const { data, error } = await supabase
+        .from('settings')
+        .insert(dbSettings)
+        .select();
       
       if (error) throw error;
-      result = data;
+      result = data[0];
     }
 
     // Transform the result back to camelCase
@@ -457,30 +457,34 @@ export const saveSettings = async (settings: any) => {
  */
 export const fetchSettings = async () => {
   try {
-    // Execute raw SQL query instead of using the typed API
-    const { data, error } = await supabase.rpc('get_settings');
+    const { data, error } = await supabase
+      .from('settings')
+      .select('*')
+      .limit(1);
 
     if (error) throw error;
 
-    if (!data) {
+    if (!data || data.length === 0) {
       return null;
     }
 
+    const settings = data[0];
+
     // Transform the result to camelCase
     return {
-      id: data.id,
-      companyName: data.company_name,
-      systemEmail: data.system_email,
-      timezone: data.timezone,
-      dateFormat: data.date_format,
-      emailNotifications: data.email_notifications,
-      newApplicationAlerts: data.new_application_alerts,
-      jobPostingExpiryAlerts: data.job_posting_expiry_alerts,
-      minYearsExperience: data.min_years_experience,
-      minQualification: data.min_qualification,
-      skillMatchThreshold: data.skill_match_threshold,
-      automaticShortlisting: data.automatic_shortlisting,
-      updatedAt: data.updated_at
+      id: settings.id,
+      companyName: settings.company_name,
+      systemEmail: settings.system_email,
+      timezone: settings.timezone,
+      dateFormat: settings.date_format,
+      emailNotifications: settings.email_notifications,
+      newApplicationAlerts: settings.new_application_alerts,
+      jobPostingExpiryAlerts: settings.job_posting_expiry_alerts,
+      minYearsExperience: settings.min_years_experience,
+      minQualification: settings.min_qualification,
+      skillMatchThreshold: settings.skill_match_threshold,
+      automaticShortlisting: settings.automatic_shortlisting,
+      updatedAt: settings.updated_at
     };
   } catch (error) {
     console.error('Error fetching settings:', error);

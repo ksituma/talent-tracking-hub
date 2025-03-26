@@ -56,7 +56,7 @@ export default function JobDetails() {
 
   if (loading) {
     return (
-      <AppShell showSidebar={false} showAdminLogin={true}>
+      <AppShell>
         <div className="container mx-auto py-12 px-4">
           <div className="flex justify-center">
             <div className="animate-pulse w-full max-w-4xl">
@@ -75,7 +75,7 @@ export default function JobDetails() {
 
   if (!job) {
     return (
-      <AppShell showSidebar={false} showAdminLogin={true}>
+      <AppShell>
         <div className="container mx-auto py-12 px-4">
           <div className="text-center">
             <h1 className="text-2xl font-bold mb-4">Job Not Found</h1>
@@ -93,7 +93,7 @@ export default function JobDetails() {
   }
 
   return (
-    <AppShell showSidebar={false} showAdminLogin={true}>
+    <AppShell>
       <div className="container mx-auto py-8 px-4">
         <div className="max-w-4xl mx-auto">
           {/* Back button */}
