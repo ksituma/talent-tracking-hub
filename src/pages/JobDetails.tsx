@@ -7,8 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, Briefcase, MapPin, Calendar, Clock, GraduationCap, Clock1, ArrowRight } from 'lucide-react';
 import { fetchJobById } from '@/utils/supabase-utils';
+import { PublicShell } from '@/components/layout/PublicShell';
 
-// Local storage key for fallback job data
 const JOBS_STORAGE_KEY = 'talent_ats_jobs';
 
 export default function JobDetails() {
@@ -21,14 +21,12 @@ export default function JobDetails() {
       setLoading(true);
       
       try {
-        // Try to fetch the job from Supabase first
         const jobData = await fetchJobById(id);
         
         if (jobData) {
           console.log('Job fetched from Supabase:', jobData);
           setJob(jobData);
         } else {
-          // Fall back to localStorage if no job found
           const savedJobs = JSON.parse(localStorage.getItem(JOBS_STORAGE_KEY) || '[]');
           const foundJob = savedJobs.find(job => job.id === id);
           
@@ -39,7 +37,6 @@ export default function JobDetails() {
       } catch (error) {
         console.error('Error fetching job:', error);
         
-        // Fall back to localStorage on error
         const savedJobs = JSON.parse(localStorage.getItem(JOBS_STORAGE_KEY) || '[]');
         const foundJob = savedJobs.find(job => job.id === id);
         
@@ -93,10 +90,9 @@ export default function JobDetails() {
   }
 
   return (
-    <AppShell>
-      <div className="container mx-auto py-8 px-4">
+    <PublicShell>
+      <div className="container mx-auto py-8">
         <div className="max-w-4xl mx-auto">
-          {/* Back button */}
           <div className="mb-6">
             <Link to="/">
               <Button variant="ghost" className="pl-0">
@@ -106,7 +102,6 @@ export default function JobDetails() {
             </Link>
           </div>
 
-          {/* Header card */}
           <Card className="mb-8">
             <CardHeader className="pb-4">
               <div className="flex items-start justify-between">
@@ -141,7 +136,6 @@ export default function JobDetails() {
             </CardHeader>
           </Card>
 
-          {/* Job details */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="md:col-span-2">
               <Card>
@@ -230,6 +224,6 @@ export default function JobDetails() {
           </div>
         </div>
       </div>
-    </AppShell>
+    </PublicShell>
   );
 }

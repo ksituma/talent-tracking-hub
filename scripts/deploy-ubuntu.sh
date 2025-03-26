@@ -1,7 +1,7 @@
-
 #!/bin/bash
 # Deployment script for Talent ATS on Ubuntu 22.04
 # This script automates the deployment process on a fresh Ubuntu 22.04 server
+# UI Note: The sidebar only appears for admin/backend pages, not on the public-facing homepage
 
 set -e  # Exit on error
 

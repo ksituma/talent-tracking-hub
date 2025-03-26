@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { AppShell } from '@/components/layout/AppShell';
+import { PublicShell } from '@/components/layout/PublicShell';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +9,6 @@ import { Briefcase, MapPin, Clock, Calendar, ChevronRight, Search, ArrowRight, G
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 
-// Local storage key for fallback job data
 const JOBS_STORAGE_KEY = 'talent_ats_jobs';
 
 export default function Index() {
@@ -17,11 +16,9 @@ export default function Index() {
   const [jobs, setJobs] = useState([]);
   const [connectionStatus, setConnectionStatus] = useState<'loading' | 'success' | 'error'>('loading');
   
-  // Test Supabase connection and fetch jobs
   useEffect(() => {
     const fetchJobsAndTestConnection = async () => {
       try {
-        // Test connection by checking if we can get the auth session
         const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
@@ -33,7 +30,6 @@ export default function Index() {
             variant: 'destructive'
           });
           
-          // Fall back to localStorage data
           const savedJobs = localStorage.getItem(JOBS_STORAGE_KEY);
           if (savedJobs) {
             setJobs(JSON.parse(savedJobs));
@@ -41,7 +37,6 @@ export default function Index() {
           return;
         }
         
-        // Connection successful, now try to fetch jobs from the database
         const { data: jobsData, error: jobsError } = await supabase
           .from('jobs')
           .select('*')
@@ -55,7 +50,6 @@ export default function Index() {
             variant: 'destructive'
           });
           
-          // Fall back to localStorage data
           const savedJobs = localStorage.getItem(JOBS_STORAGE_KEY);
           if (savedJobs) {
             setJobs(JSON.parse(savedJobs));
@@ -66,17 +60,12 @@ export default function Index() {
           if (jobsData && jobsData.length > 0) {
             setJobs(jobsData);
           } else {
-            // If no jobs in database, fall back to localStorage
             console.log('No jobs found in database, using localStorage data');
             const savedJobs = localStorage.getItem(JOBS_STORAGE_KEY);
             if (savedJobs) {
               const localJobs = JSON.parse(savedJobs);
               setJobs(localJobs);
               
-              // Optionally: sync localStorage jobs to database
-              // This commented section could be uncommented if you want to automatically
-              // add the localStorage jobs to the database when none exist
-              /*
               try {
                 for (const job of localJobs) {
                   const { error } = await supabase.from('jobs').insert({
@@ -92,7 +81,6 @@ export default function Index() {
               } catch (syncError) {
                 console.error('Error syncing jobs to database:', syncError);
               }
-              */
             }
           }
         }
@@ -112,7 +100,6 @@ export default function Index() {
           variant: 'destructive'
         });
         
-        // Fall back to localStorage data
         const savedJobs = localStorage.getItem(JOBS_STORAGE_KEY);
         if (savedJobs) {
           setJobs(JSON.parse(savedJobs));
@@ -130,14 +117,13 @@ export default function Index() {
   );
 
   return (
-    <AppShell>
+    <PublicShell>
       <div className="container mx-auto py-8">
         <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-xl p-8 mb-8 text-white">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-4xl font-bold mb-4">Find Your Dream Job</h1>
             <p className="text-lg text-blue-100 mb-6">Discover opportunities that match your skills and career goals</p>
             
-            {/* Supabase Connection Status */}
             <div className="mb-4 flex items-center justify-center gap-2">
               <span className="text-sm">Supabase Connection:</span>
               {connectionStatus === 'loading' && (
@@ -268,6 +254,6 @@ export default function Index() {
           )}
         </div>
       </div>
-    </AppShell>
+    </PublicShell>
   );
 }

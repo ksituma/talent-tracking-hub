@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { AppShell } from '@/components/layout/AppShell';
+import { PublicShell } from '@/components/layout/PublicShell';
 import { ApplicationForm } from '@/components/application/ApplicationForm';
 import { useSearchParams, Navigate } from 'react-router-dom';
 
@@ -14,8 +14,8 @@ export default function JobApplication() {
   }
 
   return (
-    <AppShell>
+    <PublicShell>
       <ApplicationForm jobId={jobId} />
-    </AppShell>
+    </PublicShell>
   );
 }
