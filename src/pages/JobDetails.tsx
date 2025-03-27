@@ -145,14 +145,14 @@ export default function JobDetails() {
 
                   <h2 className="text-xl font-semibold mb-4">Requirements</h2>
                   <ul className="list-disc pl-5 space-y-2 mb-6">
-                    {job.requirements.map((requirement, index) => (
+                    {job.requirements && job.requirements.map((requirement, index) => (
                       <li key={index} className="text-gray-700">{requirement}</li>
                     ))}
                   </ul>
 
                   <h2 className="text-xl font-semibold mb-4">Required Skills</h2>
                   <div className="flex flex-wrap gap-2 mb-6">
-                    {job.skills.map((skill, index) => (
+                    {job.skills && job.skills.map((skill, index) => (
                       <Badge key={index} variant="secondary" className="bg-gray-100 text-gray-800">
                         {skill}
                       </Badge>
@@ -187,7 +187,7 @@ export default function JobDetails() {
                       <h3 className="text-sm font-medium text-gray-500">Experience Required</h3>
                       <div className="flex items-center">
                         <Clock1 className="h-4 w-4 mr-2 text-gray-500" />
-                        <span>{job.yearsOfExperience}+ years</span>
+                        <span>{job.yearsOfExperience || job.yearsofexperience}+ years</span>
                       </div>
                     </div>
                     <Separator />
@@ -196,7 +196,7 @@ export default function JobDetails() {
                       <h3 className="text-sm font-medium text-gray-500">Minimum Qualification</h3>
                       <div className="flex items-center">
                         <GraduationCap className="h-4 w-4 mr-2 text-gray-500" />
-                        <span>{job.minQualification}</span>
+                        <span>{job.minQualification || job.minqualification}</span>
                       </div>
                     </div>
                     <Separator />
@@ -205,7 +205,7 @@ export default function JobDetails() {
                       <h3 className="text-sm font-medium text-gray-500">Job Posted</h3>
                       <div className="flex items-center">
                         <Calendar className="h-4 w-4 mr-2 text-gray-500" />
-                        <span>{new Date(job.postedDate).toLocaleDateString()}</span>
+                        <span>{new Date(job.postedDate || job.posteddate).toLocaleDateString()}</span>
                       </div>
                     </div>
                     <Separator />
@@ -214,7 +214,7 @@ export default function JobDetails() {
                       <h3 className="text-sm font-medium text-gray-500">Closing Date</h3>
                       <div className="flex items-center">
                         <Clock className="h-4 w-4 mr-2 text-gray-500" />
-                        <span>{new Date(job.closingDate).toLocaleDateString()}</span>
+                        <span>{new Date(job.closingDate || job.closingdate).toLocaleDateString()}</span>
                       </div>
                     </div>
                   </div>

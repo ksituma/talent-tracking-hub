@@ -1,4 +1,3 @@
-
 /**
  * Backend Server for Talent ATS
  * This server connects to the PostgreSQL database and provides APIs
@@ -106,11 +105,35 @@ app.post('/auth/login', async (req, res) => {
 // API routes for jobs
 app.get('/jobs', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM jobs ORDER BY "postedDate" DESC');
-    res.json(result.rows);
+    // Updated to use lowercase column names as per PostgreSQL convention
+    const result = await pool.query('SELECT * FROM jobs ORDER BY "posteddate" DESC');
+    
+    // Transform response to match frontend expected format (camelCase)
+    const transformedJobs = result.rows.map(job => ({
+      id: job.id,
+      title: job.title,
+      company: job.company,
+      logo: job.logo,
+      location: job.location,
+      type: job.type,
+      description: job.description,
+      requirements: job.requirements,
+      skills: job.skills,
+      salary: job.salary,
+      yearsOfExperience: job.yearsofexperience,
+      minQualification: job.minqualification,
+      postedDate: job.posteddate,
+      closingDate: job.closingdate,
+      featured: job.featured,
+      createdBy: job.createdby,
+      createdAt: job.createdat,
+      updatedAt: job.updatedat
+    }));
+    
+    res.json(transformedJobs);
   } catch (error) {
     console.error('Error fetching jobs:', error);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: 'Server error', details: error.message });
   }
 });
 
